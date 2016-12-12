@@ -1,0 +1,1164 @@
+#!/usr/bin/env bash
+#
+# -------------------------------------------------------------------------------------------------
+# SCRIPT TO INSTALLA AND SET SOME USEFUL PROGRAMS AND LIBRARIES LINUX-DEBIAN
+# -------------------------------------------------------------------------------------------------
+#
+# settix [install|purge] 
+#        [--all|--exclude| [--p] ] 
+#        [[--source] name_program [--d_path installation_path] [--opt installation_options]] 
+#
+# -------------------------------------------------------------------------------------------------
+
+# Colors
+RESET="\033[0m"
+BLACK="\033[30m"  
+RED="\033[31m"
+GREEN="\033[32m"    
+YELLOW="\033[33m"   
+BLUE="\033[34m"  
+MAGENTA="\033[35m" 
+CYAN="\033[36m" 
+WHITE="\033[37m" 
+BOLDBLACK="\033[1m\033[30m"       
+BOLDRED="\033[1m\033[31m"       
+BOLDGREEN="\033[1m\033[32m"      
+BOLDYELLOW="\033[1m\033[33m"     
+BOLDBLUE="\033[1m\033[34m"    
+BOLDMAGENTA="\033[1m\033[35m"   
+BOLDCYAN="\033[1m\033[36m"  
+BOLDWHITE="\033[1m\033[37m" 
+
+#-------------------
+# GLOBAL VARIABLES
+#-------------------
+ACTION="install"
+ALL=false
+EXCLUDE=false
+
+LOG_FILE="$HOME/.settiX"
+
+PATH_TAG="--d_path"
+SOURCE_TAG="--source"
+OPT_TAG="--opt"
+LIST_PROGRAMS=()
+LIST_EXCLUDE=()
+# LIST_APT=
+
+LIST_ALL_PROGRAMS=("git" "qt" "vscode" "screen" "tree" "cgdb" "ddd" "tesseract" "androidstudio" "wxWidgets")
+LIST_ALL_PROGRAMS+=("gnome" "cmake" "automake" "tex-all")
+
+BUILD_FROM_SOURCE=false
+# PATH_DOWNLOAD=$HOME"/Download/"
+PATH_DEFAULT_DOWNLOAD=$HOME"/Documents/SourceCode/"
+PATH_GLOBAL=
+CLEAN_BUILD=true
+
+readonly SYSTEM="$(uname)"
+readonly VERSION='0.0.1'
+
+# -----------------------------------------------------------------------------------------------#
+#                                   GLOBAL FUNCTIONS                                             #
+# -----------------------------------------------------------------------------------------------#
+
+DEBUGGING=true
+debug(){
+    if [ $DEBUGGING ]; then
+        echo -e "${RED}@DEBUGGING:"
+        for arg in "$@"
+        do
+            echo -e "${GREEN}    --->${YELLOW} $arg${RESET}"
+        done
+    fi
+}
+
+use_apt() {
+
+    for prg in "$@"
+    do
+        sudo apt-get "$ACTION" "$prg"
+    done
+}
+
+printf_action() {
+
+    echo "    ************************"
+    echo "    *  $1 "
+    echo "    ************************"
+}
+
+save_log_file() {
+
+    echo "*) $(date)" >> $LOG_FILE
+    for arg in "$@"
+    do
+        echo "$arg" >> $LOG_FILE    
+    done
+
+}
+
+check_which_program() {
+
+    local __resultVar=$1
+    for cmd in "${@:1}"
+    do
+        local path=$(which "$cmd")
+        if [[ ! -z "$path" ]]; then
+            save_log_file "'$cmd' found at: $path" 
+            eval $__resultVar=true
+            echo -e "${GREEN}$1 is installed: command $cmd found${RESET}"
+            return
+        fi
+    done
+
+    save_log_file "commands '$@' not found in the PATH" 
+    eval $__resultVar=false
+}
+
+use_check() {
+    debug "1st Method: "
+    check_which_program program "_make" "_qmake" "qmake"
+     if [[ $program ]]; then
+       echo "program already installed" 
+    else
+        echo "Program not found"
+    fi
+
+    debug "2nd Method: "
+    local installed=$(check_which_program "qt" "_make" "_qmake" "qmake")
+    if [[ ! -z $installed ]]; then
+        echo -e "$installed"
+        echo "The program seems to be already installed"
+    else
+        echo "Program not found"
+    fi
+
+    debug "3rd Method: "
+    if [[ ! -z $(check_which_program "qt" "_make" "_qmake" "qmake") ]]; then
+        echo "The program seems to be already installed on this Computer"
+    else
+        echo "Program not found."
+    fi
+
+    debug "4th Method: "
+    local insatlled=$(which "qt" "qmake" "make")
+    if [[ ! -z $insatlled ]]; then
+        echo -e "${YELLOW}$insatlled${RESET}"
+        echo "The program seems to be already installed on this Computer"
+    else
+        echo "Program not found"
+    fi
+
+}
+
+# it is enough call which "list of program to test"
+
+# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+# -----------------------------------------------------------------------------------------------#
+#                                   QT installation                                              #
+# -----------------------------------------------------------------------------------------------#
+
+QT_LUNCHER="qt-opensource-linux-x64-5.7.0.run"
+QT_URL="http://download.qt.io/official_releases/qt/5.7/5.7.0/"$QT_LUNCHER
+QT_UNISTALL_TOOL="MaintenanceTool"
+
+action_qt() {
+
+    if [[ "$ACTION" == "install" ]]; then
+        install_qt "$@"
+    else
+        unistall_qt "$@"
+    fi 
+
+}
+
+install_dependencies_qt() {
+
+    if [[ "$source" == false  ]]; then
+	    # install the full runtime files for the generic font configuration library: 
+        use_apt "libglu1-mesa-dev -y" "mesa-common-dev" "qt4-qmake"  # to use qmake outside Qt creator
+        save_log_file "apt-get $ACTION" "libglu1-mesa-dev -y" "mesa-common-dev" "qt4-qmake" 
+    else
+        echo -e "${RED}Build from source not aoutomatize${RESET}"
+    fi
+}
+
+# "$source" "$name_program" "$path_download" "$opt_install"
+install_qt() {
+
+    printf_action "INSTALLING QT-5"
+
+    local source="$1"
+    local name="$2"
+    local path="$3"
+    local opt="$4"
+
+    debug "source:$source" "name: $name" "path: $path" "options: $opt"
+
+    local installed=$(check_which_program "qmake")
+    if [[ ! -z $installed ]]; then
+        echo -e "$installed"
+        echo "The program seems to be already installed"
+        echo -e "Do you want to install it anyway the (yes/no) " 
+        read input
+
+        if [[ "$input" == "n"* ]]; then
+            save_log_file "Aborting installation $name" 
+            return
+        fi
+    fi
+
+    install_dependencies_qt $source
+
+    if [[ $source == true ]]; then # from source
+        save_log_file "Installing $qt from source"
+        echo -e "${GREEN}The building from the source is not yet automatize.${RESET}"
+        echo -e "Do you want to install it with the installer (yes/no) " 
+        read input
+
+        if [[ "$input" == "n"* ]]; then
+            save_log_file "Aborting installation $name" 
+            return
+        fi
+    fi
+    
+    save_log_file "Installing $qt via installer"
+    # from installer
+	mkdir -p $path 2>>$LOG_FILE 
+    cd $path 2>>$LOG_FILE
+    if [ ! -d $QT_URL ]; then
+        save_log_file "downloading installer from $QT_URL" "into $path/$QT_LUNCHER"
+	    wget $QT_URL
+    fi
+	chmod +x $QT_LUNCHER 2>>$LOG_FILE
+	./$QT_LUNCHER &
+}
+
+unistall_qt() {
+
+    // TODO: read log file and gather the informations
+    printf_action "UNISTALLING QT"
+    
+    local source="$1"
+    local name="$2"
+    local path="$3"
+    local opt="$4"
+
+    debug "source:$source" "name: $name" "path: $path" "options: $opt"
+
+    local installed=$(check_which_program "qmake")
+    if [[ ! -z $installed ]]; then
+        echo -e "$installed"
+        echo "The program seems not to be installed"
+        echo -e "Do you want to proceed with the unistallation it anyway (yes/no) " 
+        read input
+
+        if [[ "$input" == "y"* ]]; then
+            echo -e "input is $input"
+            return
+        fi
+    fi
+
+    if [[ $source ]]; then # from source
+        echo -e "${GREEN}The building from the source is not yet automatize.${RESET}"
+        echo -e "Do you want to uninstall it with the installer (yes/no) " 
+        read input
+
+        if [[ "$input" == "n"* ]]; then
+            save_log_file "Aborting installation $name" 
+            return
+        fi
+    fi
+    
+    # from installer
+    if [ -d $path ]; then
+	    cd $path && \
+        ./$QT_UNISTALL_TOOL
+    fi
+}
+
+# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#---------------------------------------------------------------------------------------------------#
+#                                           VS CODE                                                 #
+#---------------------------------------------------------------------------------------------------#
+
+VS_GIT="https://github.com/microsoft/vscode"
+VS_INSTALLER="scripts/npm.sh"
+
+action_vscode() {
+    if [[ "$ACTION" == "install" ]]; then
+        install_vscode "$@"
+    else
+        unistall_vscode "$@"
+   fi 
+}
+
+install_dependencies_vscode() {
+
+    if [[ "$1" ]]; then
+        echo "TODO:"
+    else
+        sudo add-apt-repository ppa:ubuntu-desktop/ubuntu-make
+        use_apt "update" "ubuntu-make"
+    fi
+
+}
+
+install_vscode_exention() {
+
+    printf_action "INSTALLING THE EXTENTIONS"
+   # install the extensions
+    code --install-extension ms-vscode.cpptools
+    code --install-extension vscodevim.vim
+
+}
+
+install_vscode() {
+
+    local source="$1"
+    local name="$2"
+    local path="$3"
+    local opt="$4"
+
+    debug "source:$source" "name: $name" "path: $path" "options: $opt"
+
+    local installed=$(check_which_program "vscode")
+    if [[ ! -z $installed ]]; then
+        echo -e "$installed"
+        echo "The program seems to be already installed"
+        echo -e "Do you want to install it anyway (yes/no) " 
+        read input
+
+        if [[ "$input" == "n"* ]]; then
+            save_log_file "Aborting installation $name" 
+            return
+        fi
+    fi
+
+    install_dependencies_vscode $source
+
+    if [[ $source ]]; then # from source
+        mkdir -p $path && \
+        cd $path && \
+        git clone $VS_GIT && \
+        cd vscode
+        if [[ -z "$opt" ]]; then
+            opt="--arch=64"
+        fi
+         ./$VS_INSTALLER $ACTION $opt
+    else
+        # from installer
+	    umake ide visual-studio-code
+    fi
+
+    install_vscode_exention
+    
+}
+
+unistall_vscode() {
+    printf_action "UNISTALL VSCODE"
+}
+
+# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#---------------------------------------------------------------------------------------------------#
+#                                       Git from Source                                             #
+#---------------------------------------------------------------------------------------------------#
+
+GIT_CLONE=git://git.kernel.org/pub/scm/git/git.git
+
+install_git_source() {
+    
+    printf_action "INSTALLING git from source"
+    
+    local source="$1"
+    local name="$2"
+    local path="$3"
+    local opt="$4"
+    
+    mkdir -p $path && \
+    cd "$path" 
+
+    local installed=$(check_which_program "git")   
+    # if git is installed, I use git to download the source.
+    if [[ ! -z $installed ]]; then
+        git clone $GIT_CLONE
+    else
+        wget "..." -o git
+    fi
+
+    cd git && \
+    ./configure && \
+    make all $opt  && \
+    sudo make install
+
+    if [[ "$CLEAN_BUILD" == true ]]; then
+        make clean
+    fi
+
+}
+
+unistall_git_source() {
+    # TODO:
+    printf_action "UNISTALLING Git from Source"
+}
+
+action_git_source() {
+
+    if [[ "$ACTION" == "install" ]]; then
+        install_git_source "$@"
+    else
+        unistall_git_source "$@"
+    fi 
+
+
+}
+
+# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#---------------------------------------------------------------------------------------------------#
+#                                       cgdb - color gdb                                            #
+#---------------------------------------------------------------------------------------------------#
+
+
+install_dependencies_cgdb() {
+
+    if [[ "$1" ]]; then
+        echo "TODO:"
+    else
+        use_apt "libncurses5-dev" "flex" "help2man" "libreadline6" "libreadline6-dev"
+    fi
+
+}
+
+install_cgdb() {
+
+    printf_action "INSTALLING cgdb from source"
+    
+    local source="$1"
+    local name="$2"
+    local path="$3"
+    local opt="$4"
+    
+    local installed=$(check_which_program "cgdb")
+    if [[ ! -z $installed ]]; then
+        echo -e "$installed"
+        echo "The program seems to be already installed"
+        echo -e "Do you want to install it anyway (yes/no) " 
+        read input
+
+        if [[ "$input" == "n"* ]]; then
+            save_log_file "Aborting installation $name" 
+            return
+        fi
+    fi
+
+    mkdir -p $path
+    cd "$path" 
+
+    install_dependencies_cgdb "$source"
+
+    if [[ -z "$opt" ]]; then
+        opt="--prefix=/usr/local"
+    elif [[ "$opt" != *"--prefix"* ]]; then
+        opt=$opt" --prefix=/usr/local"
+    fi
+
+    git clone git://github.com/cgdb/cgdb.git && \
+    ./autogen.sh && \
+    ./configure $opt  && \
+    make && \
+    sudo make install
+    
+    if [[ "$CLEAN_BUILD" == true ]]; then
+        make clean
+    fi
+
+}
+
+unistall_cgdb() {
+
+    printf_action "UNISTALLING cgdb"
+    # TODO:
+
+}
+
+action_cgdb() {
+    
+    if [[ "$ACTION" == "install" ]]; then
+        install_cgdb "$@"
+    else
+        unistall_cgdb "$@"
+   fi 
+
+}
+
+# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+# -----------------------------------------------------------------------------------------------#
+#                                         TESSERACT                                              #
+# -----------------------------------------------------------------------------------------------#
+
+DIR_TESS_DATA="/usr/share/tesseract-ocr"
+TESS_GIT="https://github.com/tesseract-ocr/tesseract.git"
+
+unistall_tesseract() {
+
+    printf_action "UNINSTALLING Tesseract from source"
+
+    local source="$1"
+    local name="$2"
+    local path="$3"
+    local opt="$4"
+    
+    local installed=$(check_which_program "tesseract")
+    if [[ ! -z $installed ]]; then
+        echo -e "$installed"
+        echo "The program seems to be already installed"
+        echo -e "Do you want to install it anyway (yes/no) " 
+        read input
+
+        if [[ "$input" == "n"* ]]; then
+            save_log_file "Aborting installation $name" 
+            return
+        fi
+    fi
+
+    install_dependencies_tesseract "$source"        
+    if [ -d "$DIR_TESS_DATA" ]; then
+        rm -rf $DIR_TESS_DATA
+    fi
+
+    rm $(which tesseract) 
+
+    # remove git repo
+    if [ -d "path"/tesseract ]; then
+        rm -rf  "path"/tesseract 
+    fi
+
+}    
+ 
+install_dependencies_tesseract() {
+
+    # use_apt "git" "automake" "build-essential" "libtool" "tesseract-ocr-eng"
+    # dependencies not to purge
+    if [ "$ACTION" == install ]; then 
+        use_apt "git" "autoconf" "automake" "libtool" 
+    fi
+    # depenendcies
+    use_apt "pkg-config" "libpng12-dev" "libjpeg8-de" "libtiff5-dev" "zlib1g-dev"
+    # training tool
+    use_apt "libicu-dev" "libpango1.0-dev" "libcairo2-dev"
+    # leptonica
+    use_apt "libleptonica-dev"
+
+}
+
+install_tesseract() {
+
+    printf_action "INSTALLING Tesseract from source"
+    
+    local source="$1"
+    local name="$2"
+    local path="$3"
+    local opt="$4"
+    
+    local installed=$(check_which_program "tesseract")
+    if [[ ! -z $installed ]]; then
+        echo -e "$installed"
+        echo "The program seems to be already installed"
+        echo -e "Do you want to install it anyway (yes/no) " 
+        read input
+
+        if [[ "$input" == "n"* ]]; then
+            save_log_file "Aborting installation $name" 
+            return
+        fi
+    fi
+
+    mkdir -p $path
+    cd "$path" 
+
+    install_dependencies_tesseract "$source"
+    if [ ! -d "tesseract" ]; then
+        git clone $TESS_GIT
+    fi
+    cd tesseract && \
+    ./autogen.sh && \
+    ./configure LDFLAGS="-L/usr/local/lib" CFLAGS="-I/usr/local/include" && \
+    make && \
+    sudo make install && \
+    make training && \
+    
+    if [[ "$CLEAN_BUILD" == true ]]; then
+        make clean
+    fi
+
+    # sudo make training-install && \  # no training install ...
+    sudo ldconfig
+    # no TESSDATA in enviromental var: I append it to .bashrc
+    if [[ -z "$(env | grep TESSDATA_PREFIX=)" || -z $(grep "TESSDATA_PREFIX=" $HOME/.bashrc) ]];
+    then
+        echo "exporting TESSDATA_PREFIX into the file .bashrc"
+        echo "In order to use tesseract you need to restart a terminal"
+        echo "or type:"
+        echo "export TESSDATA_PREFIX=/usr/share/tesseract-ocr"
+        echo "export TESSDATA_PREFIX=/usr/share/tesseract-ocr" >> ~/.bashrc
+    fi
+
+}
+
+action_tesseract() {
+
+    if [[ "$ACTION" == "install" ]]; then
+        install_tesseract "$@"
+    else
+        unistall_tesseract "$@"
+   fi 
+
+}
+
+# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+# -----------------------------------------------------------------------------------------------#
+#                                   Android Studio                                               #
+# -----------------------------------------------------------------------------------------------#
+
+SCRIPT_ANDROID_SCRIPT_ZIP="android-studio-ide-145.3537739-linux.zip"   # android-studio-ide-141.2178183-linux.zip
+URL_ANDROID_STUDIO="https://dl.google.com/dl/android/studio/ide-zips/2.2.3.0/"$SCRIPT_ANDROID_SCRIPT_ZIP 
+DESKTOP_ANDROID=$HOME"/.local/share/applications/androidstudio.desktop"
+
+unistall_androidstudio() {
+
+    printf_action "UNINSTALLING Android Studio"
+
+    local source="$1"
+    local name="$2"
+    local path="$3"
+    local opt="$4"
+    
+    local installed=$(check_which_program "studio")
+    if [[ ! -z $installed ]]; then
+        echo -e "$installed"
+        echo "The program seems not to be installed"
+        echo -e "Do you want to continue anyway (yes/no) " 
+        read input
+
+        if [[ "$input" == "n"* ]]; then
+            save_log_file "Aborting installation $name" 
+            return
+        fi
+    fi
+
+}    
+
+install_dependencies_adroidstudio() {
+    echo TODO
+}
+
+install_androidstudio() {
+
+    printf_action "INSTALLING Android Studio"
+    
+    local source="$1"
+    local name="$2"
+    local path="$3"
+    local opt="$4"
+    
+    local installed=$(check_which_program "studio")
+    if [[ ! -z $installed ]]; then
+        echo -e "$installed"
+        echo "The program seems to be already installed"
+        echo -e "Do you want to install it anyway (yes/no) " 
+        read input
+
+        if [[ "$input" == "n"* ]]; then
+            save_log_file "Aborting installation $name" 
+            return
+        fi
+    fi
+
+    mkdir -p $path
+    cd "$path" 
+
+    install_dependencies_adroidstudio "$source"
+
+    if [ ! -d "android-studio" ]; then
+        wget $URL_ANDROID_STUDIO
+    fi
+
+    if [[ -z "$opt" ]]; then
+        opt="/opt"
+    fi
+
+    sudo unzip "${SCRIPT_ANDROID_SCRIPT_ZIP}" -d "$opt"
+
+    cd "$opt"/android-studio/bin 2>>$LOG_FILE
+    ./studio.sh
+
+    # if [[ -z "$(env | grep android-studio)" || -z "$(grep 'android-studio' $HOME/.bashrc)" ]]; then
+    if [[ -z "$(env | grep android-studio)" ]]; then
+        if [[ -z "$(grep 'android-studio' $HOME/.bashrc)" ]]; then
+            echo "exporting $opt/android-studio/bin into the file .bashrc"
+            $(export PATH=$PATH:$opt/android-studio/bin)
+            echo "export PATH=$PATH:$opt/android-studio/bin" >> ~/.bashrc
+        fi
+    fi
+
+    save_log_file "Creation of a desktop file"
+    echo "Create a desktop file"
+
+    touch $DESKTOP_ANDROID
+    echo -e "[Desktop Entry]
+    Version=1.0
+    Type=Application
+    Name=Android Studio
+    Exec=${opt}'android-studio/bin/studio.sh' %f
+    Icon=${opt}/android-studio/bin/studio.png
+    Categories=Development;IDE;
+    Terminal=false
+    StartupNotify=true
+    StartupWMClass=android-studio" >> $DESKTOP_ANDROID
+    
+    
+}
+
+action_androidstudio() {
+
+    if [[ "$ACTION" == "install" ]]; then
+        install_androidstudio "$@"
+    else
+        unistall_androidstudio "$@"
+   fi 
+
+}
+
+
+# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+# -----------------------------------------------------------------------------------------------#
+#                                        Wx Widgets                                              #
+# -----------------------------------------------------------------------------------------------#
+
+WXWIDGETS_GIT="https://github.com/wxWidgets/wxWidgets.git"
+
+unistall_wxWidgets() {
+
+    printf_action "UNINSTALLING wxWidgets from source"
+
+    local source="$1"
+    local name="$2"
+    local path="$3"
+    local opt="$4"
+    
+    local installed=$(`wx-config`)
+    if [[ ! -z $installed ]]; then
+        # echo -e "$installed"
+        echo "The program seems to be already installed"
+        echo -e "Do you want to install it anyway (yes/no) " 
+        read input
+
+        if [[ "$input" == "n"* ]]; then
+            save_log_file "Aborting installation $name" 
+            return
+        fi
+    fi
+
+
+}    
+ 
+install_dependencies_wxWidgets() {
+    
+    # use_apt "git" "automake" "build-essential" "libtool" "tesseract-ocr-eng"
+
+    use_apt "libgstreamer1.0-dev" "libgstreamer-plugins-base1.0-dev"
+    use_apt "libwxgtk-media3.0-dev"
+    use_apt "build-essential" "libgtk-3-dev"
+    # use_apt install libcurl4 ... 
+    use_apt "libcurl4-gnutls-dev"
+
+}
+
+install_wxWidgets() {
+
+    printf_action "INSTALLING wxWidgets from source"
+    
+    local source="$1"
+    local name="$2"
+    local path="$3"
+    local opt="$4"
+    # TODO: check wxWidgets !!!
+    local installed=true
+    # $(check_which_program "tesseract")
+    if [[ ! -z $installed ]]; then
+        echo -e "$installed"
+        echo "The program seems to be already installed"
+        echo -e "Do you want to install it anyway (yes/no) " 
+        read input
+
+        if [[ "$input" == "n"* ]]; then
+            save_log_file "Aborting installation $name" 
+            return
+        fi
+    fi
+
+    mkdir -p $path
+    cd "$path" 
+
+    install_dependencies_wxWidgets "$source"
+    if [ ! -d "wxWidgets" ]; then
+        git clone $WXWIDGETS_GIT
+    fi
+    
+    if [[ -z "$opt" ]]; then
+        opt=" --enable-unicode --enable-debug --with-opengl"
+    fi
+    
+    cd wxWidgets 2>>$LOG_FILE
+    mkdir gtk-build 2>>$LOG_FILE
+    cd gtk-build 2>>$LOG_FILE
+    ../configure $opt 2>>$LOG_FILE
+    make 2>>$LOG_FILE
+    make install 2>>$LOG_FILE
+    sudo ldconfig
+    
+    if [[ "$CLEAN_BUILD" == true ]]; then
+        make clean
+    fi
+
+}
+
+action_wxWidgets() {
+
+    if [[ "$ACTION" == "install" ]]; then
+        install_wxWidgets "$@"
+    else
+        unistall_wxWidgets "$@"
+   fi 
+
+}
+
+# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#---------------------------------------------------------------------------------------------------#
+#                                       Parse argumenst                                             #
+#---------------------------------------------------------------------------------------------------#
+
+parse_arguments() {
+
+    local arg
+    local tmp_source=false
+
+    while test $# != 0
+    do
+        arg="$1"
+        debug "PARSING THE OPTION:" "$1"
+        case "$arg" in
+            # ---- 1.st option ---------
+            install)
+                ACTION="install"
+                ;;
+            purge|unistall)
+                ACTION="purge"
+                ;;
+                # <<<<<<<<<<<<<<<<<<<<<<     
+
+            # -----2.nd option ---------
+            --all|-a)
+                ALL=true
+                ;;
+            --exclude|-e)
+                EXCLUDE=true
+                ;;
+            --prgm)
+                ALL=false; EXCLUDE=false;
+                ;;
+            --clean)
+                CLEAN_BUILD=true
+                ;;
+            --noclean|nclean)
+                CLEAN_BUILD=false
+                ;;
+                # <<<<<<<<<<<<<<<<<<<<<<     
+
+            # ----- 3.rd + options ------
+            --source|-s)
+                BUILD_FROM_SOURCE=true
+                tmp_source=true
+                LIST_PROGRAMS+=("$SOURCE_TAG")
+                ;;
+            --d_path|-dp)
+                shift; local path="$1"
+                PATH_GLOBAL="$path"
+                LIST_PROGRAMS+=("$PATH_TAG" "$path")
+                ;;
+            --opt|-options|-o)
+                shift; local opt="$1"
+                LIST_PROGRAMS+=("$OPT_TAG" "$opt")
+                ;;       
+            # ---- extra: help ---------
+            --help|-h)
+                usage_long | less -R
+                exit 0
+                ;;
+            --version|version)
+			    echo "settiX version $VERSION"
+			    exit 0
+			    ;;
+             # programs -> install or exclude   
+            *)
+                echo "         default: $arg == * "
+                if [[ "$EXCLUDE" == "true" ]]; then
+                    LIST_EXCLUDE+=("$arg")
+                else
+                    LIST_PROGRAMS+=("$arg")
+                fi
+                ;;
+        esac 
+        shift;
+    done
+
+}
+
+parse_actions() {
+    
+    sudo apt-get update  # updating
+
+    for (( i=0; i<${#LIST_PROGRAMS[@]}; i++ ))
+    do
+        debug "START OF PARSE ACTION $i" "${LIST_PROGRAMS[$i]}"
+
+        local source="$BUILD_FROM_SOURCE"
+        local name_program="-"
+        local path_download="$PATH_DEFAULT_DOWNLOAD"
+        local opt_install=""
+
+        if [[ ${LIST_PROGRAMS[$i]} == "$SOURCE_TAG" ]]; then   # build from source? 
+            source=true
+            i=$((i+1))
+        fi
+        
+        name_program=${LIST_PROGRAMS[$i]}                     # name program  
+
+        if [[ ${LIST_PROGRAMS[$((i+1))]} == "$PATH_TAG" ]]; then
+            i=$((i+2))
+            debug "** ${LIST_PROGRAMS[$i]}"
+            path_download=${LIST_PROGRAMS[$i]}
+        fi
+
+        if [[ ${LIST_PROGRAMS[$((i+1))]} == "$OPT_TAG" ]]; then
+            i=$((i+2))
+            opt_install=${LIST_PROGRAMS[$i]}
+        fi
+
+        save_log_file "s:$source" "n:$name_program" "p:$path_download" "o:$opt_install"
+
+        case "$name_program" in
+            qt)
+                debug "${MAGENTA}PROGRAM ACTION list: " "name: ${GREEN}$name_program${RESET}" "from source: ${GREEN}$source${RESET}" "path: ${GREEN}$path_download${RESET}" "options: ${GREEN}$opt_install${RESET}"
+                action_qt "$source" "$name_program" "$path_download" "$opt_install"
+                ;;
+            vscode)    
+                debug "${MAGENTA}PROGRAM ACTION list: " "name: ${GREEN}$name_program${RESET}" "from source: ${GREEN}$source${RESET}" "path: ${GREEN}$path_download${RESET}" "options: ${GREEN}$opt_install${RESET}"
+                action_vscode "$source" "$name_program" "$path_download" "$opt_install"
+                ;;
+            cgdb)
+                debug "${MAGENTA}PROGRAM ACTION list: " "name: ${GREEN}$name_program${RESET}" "from source: ${GREEN}$source${RESET}" "path: ${GREEN}$path_download${RESET}" "options: ${GREEN}$opt_install${RESET}"
+                action_cgdb "$source" "$name_program" "$path_download" "$opt_install"
+                ;;
+            tesseract)
+                debug "${MAGENTA}PROGRAM ACTION list: " "name: ${GREEN}$name_program${RESET}" "from source: ${GREEN}$source${RESET}" "path: ${GREEN}$path_download${RESET}" "options: ${GREEN}$opt_install${RESET}"
+                action_tesseract "$source" "$name_program" "$path_download" "$opt_install"
+                ;;
+            android|androidstudio)
+                debug "${MAGENTA}PROGRAM ACTION list: " "name: ${GREEN}$name_program${RESET}" "from source: ${GREEN}$source${RESET}" "path: ${GREEN}$path_download${RESET}" "options: ${GREEN}$opt_install${RESET}"
+                action_androidstudio "$source" "$name_program" "$path_download" "$opt_install"
+                ;;
+            wxWidgets|wxwidgets)
+                debug "${MAGENTA}PROGRAM ACTION list: " "name: ${GREEN}$name_program${RESET}" "from source: ${GREEN}$source${RESET}" "path: ${GREEN}$path_download${RESET}" "options: ${GREEN}$opt_install${RESET}"
+                action_wxWidgets "$source" "$name_program" "$path_download" "$opt_install"
+                ;;
+            git|tree|screen|ddd|tex-all|textstudio|textlive*)
+
+                if [[ ! "$source" ]]; then
+                    case "$name_program" in
+                        git)
+                            debug "${MAGENTA}PROGRAM ACTION list: " "name: ${GREEN}$name_program${RESET}" "from source: ${GREEN}$source${RESET}" "path: ${GREEN}$path_download${RESET}" "options: ${GREEN}$opt_install${RESET}"
+                            #action_git_source "$source" "$name_program" "$path_download" "$opt_install"
+                            ;;
+                        *)
+                            echo -e "${BLUE}WARNING: ${RESET}" "Unknow program"
+                            ;;
+                    esac    
+                else
+                    case "$name_program" in
+                        gnome|gnome_pkg)
+                            name_program="libgnome2-bin"
+                            ;;
+                        cmake|Cmake|CMake)
+                            name_program="cmake"
+                            ;;
+                        automake)
+                            name_program="automake"
+                            ;;
+                        textstudio)
+                            name_program="textstudio"
+                            ;;
+                        textlive*)
+                            name_program="textlive-full"
+                            ;;
+                        tex-all)
+                            name_program="textstudio" 
+                            name_program+=" textlive-studio"
+                            ;;
+                        *)
+                            echo -e "${BLUE}WARNING: ${RESET}" "Unknow program" 
+                            echo -e "try with ${GREEN}apt-get${RESET} $ACTION $name_program"
+                            save_log_file "WARNING: Unknown Program try apt-get $ACTION $name_program"
+                            use_apt "$name_program" >> $LOG_FILE
+                            ;;
+
+                    esac
+
+                    use_apt "$name_program"
+                fi
+                ;;
+            *__excluded_program__)
+                debug "EXCLUDED:" "excluded program at this position."
+                save_log_file "excluded program"
+                ;;
+            *)
+                echo -e "${BLUE}WARNING: ${RESET}" "Unknow program" 
+                echo -e "try with ${GREEN}apt-get${RESET} $ACTION $name_program"
+                save_log_file "WARNING: Unknown Program try apt-get $ACTION $name_program"
+                use_apt "$name_program" >> $LOG_FILE
+                ;;
+            
+        esac
+
+    done
+
+}
+
+exclude_programs() {
+
+
+    LIST_PROGRAMS=("${LIST_ALL_PROGRAMS[@]}")
+
+    for ((i=0; i<${#LIST_EXCLUDE[@]};i++))
+    do
+        for ((j=0; j<${#LIST_PROGRAMS[@]};j++))
+        do
+            if [[ "$LIST_EXCLUDE[$i]" == "$LIST_PROGRAMS[$j]" ]]; then
+                debug "LIST EXCLUDE $i is equal to LIST PROGRAMS $j" "$LIST_EXCLUDE[$i] == $LIST_PROGRAMS[$j]" 
+                LIST_PROGRAMS[$j]+="__excluded_program__"
+            fi
+        done
+    done
+}
+
+# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#---------------
+# Usage
+#---------------
+usage() {
+    echo -e "${GREEN}USAGE:${RESET} ./settix.sh [ ${YELLOW}[ install ]${RESET} | purge ]"
+    echo -e "                   [ --all | --exclude | ${RED}[ --p ]${RESET} ] [ [--clean] | --nclean ]"
+    echo -e "                   [ ${CYAN}[ --source ]${RESET} name_program ${MAGENTA}[--d_path installation_path]${RESET} ${BLUE}[--opt installation_options]${RESET} ]"
+
+}
+
+usage_long() {
+    local pager=$(git config --get core.pager)
+    #${GIT_PAGER:-${pager:-${PAGER:-less -FRSX}}} << EOF
+    echo -e "\n
+    ${YELLOW}USAGE${RESET}
+        ./settix.sh [ [ install ] | purge ]
+                    [ --all| --exclude | [--p] ] [ [--clean] | --nclean ]
+                    [ [ --source ] name_program [--d_path installation_path] [--opt installation_options] ]
+
+    ${YELLOW}DESCRIPTION${RESET}
+
+    ${YELLOW}ACTION${RESET}
+        . install
+        . purge
+
+    ${YELLOW}LIST OF PROGRAMS${RESET}
+	    . ${BOLDGREEN}qt${RESET} : Installation of the Library Qt (open source version). It is downloaded the installer. 
+                It is possible to install:
+                    . The library
+                    . Qt creator
+                    . from source not yet automatize
+
+                . ${RED}INSTALLATION NOTE:${RESET}
+                    * In order to use qmake also outside Qt Creator it is needed the package 
+                      qt4-qmake (which is installed in the dependencies) 
+                    * --d_path to specify where do you want the installed to be downloaded.
+                    * --source: the installation from the source is not yet ready    
+
+ 	    . ${BOLDGREEN}androidstudio|android${RESET} : Installation of the IDE android studio.
+                . ${RED}INSTALLATION NOTE:${RESET}
+                    * --d_path indicate the location where the Android Studio Zip is download  
+                    * --opt indicate where the program is installed. The default location is '/opt'
+
+ 	    . ${BOLDGREEN}wxWidgets${RESET} : Installation of the C++ library wxWidgets
+                . ${RED}INSTALLATION NOTE:${RESET}
+                    * --d_path indicate the location where the git repository is going to be cole
+                    * --opt: you can use this option to specify the options of the configuration, the defoult are
+                             ${MAGENTA}--enable-unicode --enable-debug --with-opengl${RESET}
+
+ 	    . ${BOLDGREEN}visual studio code${RESET}
+	    . ${BOLDGREEN}git${RESET}
+	    . ${BOLDGREEN}tree${RESET}
+	    . ${BOLDGREEN}screen${RESET}
+	    . ${BOLDGREEN}ddd${RESET}
+	    . ${BOLDGREEN}cgdb${RESET}
+	    . ${BOLDGREEN}tesseract${RESET}
+	    . ${BOLDGREEN}help${RESET} : Shows this help screen.
+	    . ${BOLDGREEN}gnome${RESET}
+	    . ${BOLDGREEN}cmake${RESET}
+	    . ${BOLDGREEN}automake${RESET}
+	    . ${BOLDGREEN}tex-all${RESET}
+
+    ${YELLOW}OPTIONS${RESET}
+	    -h, --help		Shows this help screen.
+	    --version		Prints version.
+
+    ${YELLOW}VERSION${RESET}
+	    $VERSION"
+#EOF
+    exit 0
+}
+
+#---------------
+# Main Function 
+#---------------
+main(){
+    save_log_file "********************************" "lunch settiX"
+    parse_arguments "$@"
+
+    if [[ "$ALL" == true ]]; then
+        debug "Create list of all programs"
+        LIST_PROGRAMS=("${LIST_ALL_PROGRAMS[@]}")
+        PATH_DEFAULT_DOWNLOAD=$PATH_GLOBAL
+    elif [[ "$EXCLUDE" == true ]]; then
+        debug "Create list of all programs without the excluded"
+        exclude_programs
+    fi
+
+    debug "${GREEN}LIST PROGRAMS:" "${LIST_PROGRAMS[@]}"
+    save_log_file "List of Programs and Options" "${LIST_PROGRAMS[@]}"
+    parse_actions
+
+    # use_check 
+}
+
+if [ $# = 0 ]; then
+	usage;
+    exit 0
+fi
+
+main "$@"
