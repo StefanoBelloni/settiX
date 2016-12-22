@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # -------------------------------------------------------------------------------------------------
-# SCRIPT TO INSTALLA AND SET SOME USEFUL PROGRAMS AND LIBRARIES LINUX-DEBIAN
+# SCRIPT TO INSTALLA AND SET LINUX-DEBIAN
 # -------------------------------------------------------------------------------------------------
 #
 # settix [install|purge] 
@@ -36,6 +36,7 @@ ACTION="install"
 ALL=false
 EXCLUDE=false
 
+DEBUGGING=false
 LOG_FILE="$HOME/.settiX"
 
 PATH_TAG="--d_path"
@@ -46,7 +47,7 @@ LIST_EXCLUDE=()
 # LIST_APT=
 
 LIST_ALL_PROGRAMS=("git" "qt" "vscode" "screen" "tree" "cgdb" "ddd" "tesseract" "androidstudio" "wxWidgets")
-LIST_ALL_PROGRAMS+=("gnome" "cmake" "automake" "tex-all")
+LIST_ALL_PROGRAMS+=("gnome" "cmake" "automake" "tex-all" "tess-two")
 
 BUILD_FROM_SOURCE=false
 # PATH_DOWNLOAD=$HOME"/Download/"
@@ -61,9 +62,8 @@ readonly VERSION='0.0.1'
 #                                   GLOBAL FUNCTIONS                                             #
 # -----------------------------------------------------------------------------------------------#
 
-DEBUGGING=true
 debug(){
-    if [ $DEBUGGING ]; then
+    if [ "$DEBUGGING" == true ]; then
         echo -e "${RED}@DEBUGGING:"
         for arg in "$@"
         do
@@ -347,7 +347,7 @@ install_vscode() {
         if [[ -z "$opt" ]]; then
             opt="--arch=64"
         fi
-         ./$VS_INSTALLER $ACTION $opt
+         ./$VS_INSTALLER $opt # $ACTION $opt
     else
         # from installer
 	    umake ide visual-studio-code
@@ -621,6 +621,77 @@ action_tesseract() {
 }
 
 # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+# -----------------------------------------------------------------------------------------------#
+#                                         TESSERACT                                              #
+# -----------------------------------------------------------------------------------------------#
+
+TESS_GIT_STUDIO="git://github.com/rmtheis/tess-two"
+
+unistall_tesseract_studio() {
+
+    printf_action "UNINSTALLING Tesseract for Android Studio from source"
+
+}    
+ 
+install_dependencies_tesseract_studio() {
+
+    if [[ "$(which ndk-build)" == "" ]];then 
+        echo "Install the ndk-bundlei, or add its directory to the PATH variable"
+    fi
+
+    # depenendcies
+    use_apt "ant"
+
+}
+
+install_tesseract_studio() {
+
+    printf_action "INSTALLING Tesseract from source"
+    
+    local source="$1"
+    local name="$2"
+    local path="$3"
+    local opt="$4"
+
+    # export PATH=$PATH:$Android/Sdk/ndk-bundle
+    # TODO:
+    # local installed=$(check_which_program "ndk-build")
+    # if [[ -z $installed ]]; then
+        # if [[ -z "$(echo "$PATH" | grep ndk-bundle)" || -z $(grep "ndk-bundle" $HOME/.bashrc) ]]; then
+            # echo "TODO"
+        # fi
+        # echo "Install the ndk-bundle, or add its directory to the PATH variable"
+        # save_log_file "Aborting installation $name" 
+        # return
+    # fi
+
+    mkdir -p $path
+    cd "$path" 
+
+    install_dependencies_tesseract "$source"
+    if [ ! -d "tess-two" ]; then
+        git clone $TESS_GIT_STUDIO
+    fi
+    cd tess-two/tess-two && \
+    ndk-build && \
+    android update project --path . && \
+    ant release
+    
+}
+
+action_tesseract_studio() {
+
+    if [[ "$ACTION" == "install" ]]; then
+        install_tesseract_studio"$@"
+    else
+        unistall_tesseract_studio "$@"
+   fi 
+
+}
+
+# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
 
 # -----------------------------------------------------------------------------------------------#
 #                                   Android Studio                                               #
@@ -900,6 +971,7 @@ parse_arguments() {
                 ;;       
             # ---- extra: help ---------
             --help|-h)
+                usage
                 usage_long | less -R
                 exit 0
                 ;;
@@ -956,11 +1028,11 @@ parse_actions() {
         save_log_file "s:$source" "n:$name_program" "p:$path_download" "o:$opt_install"
 
         case "$name_program" in
-            qt)
+            qt|QT|Qt)
                 debug "${MAGENTA}PROGRAM ACTION list: " "name: ${GREEN}$name_program${RESET}" "from source: ${GREEN}$source${RESET}" "path: ${GREEN}$path_download${RESET}" "options: ${GREEN}$opt_install${RESET}"
                 action_qt "$source" "$name_program" "$path_download" "$opt_install"
                 ;;
-            vscode)    
+            vscode|VSCODE)    
                 debug "${MAGENTA}PROGRAM ACTION list: " "name: ${GREEN}$name_program${RESET}" "from source: ${GREEN}$source${RESET}" "path: ${GREEN}$path_download${RESET}" "options: ${GREEN}$opt_install${RESET}"
                 action_vscode "$source" "$name_program" "$path_download" "$opt_install"
                 ;;
@@ -972,6 +1044,11 @@ parse_actions() {
                 debug "${MAGENTA}PROGRAM ACTION list: " "name: ${GREEN}$name_program${RESET}" "from source: ${GREEN}$source${RESET}" "path: ${GREEN}$path_download${RESET}" "options: ${GREEN}$opt_install${RESET}"
                 action_tesseract "$source" "$name_program" "$path_download" "$opt_install"
                 ;;
+            tess-two|tesseract_android)
+                debug "${MAGENTA}PROGRAM ACTION list: " "name: ${GREEN}$name_program${RESET}" "from source: ${GREEN}$source${RESET}" "path: ${GREEN}$path_download${RESET}" "options: ${GREEN}$opt_install${RESET}"
+                action_tesseract_studio "$source" "$name_program" "$path_download" "$opt_install"
+                ;;
+
             android|androidstudio)
                 debug "${MAGENTA}PROGRAM ACTION list: " "name: ${GREEN}$name_program${RESET}" "from source: ${GREEN}$source${RESET}" "path: ${GREEN}$path_download${RESET}" "options: ${GREEN}$opt_install${RESET}"
                 action_androidstudio "$source" "$name_program" "$path_download" "$opt_install"
@@ -1068,10 +1145,12 @@ usage() {
     echo -e "${GREEN}USAGE:${RESET} ./settix.sh [ ${YELLOW}[ install ]${RESET} | purge ]"
     echo -e "                   [ --all | --exclude | ${RED}[ --p ]${RESET} ] [ [--clean] | --nclean ]"
     echo -e "                   [ ${CYAN}[ --source ]${RESET} name_program ${MAGENTA}[--d_path installation_path]${RESET} ${BLUE}[--opt installation_options]${RESET} ]"
-
+    echo -e "${RED}List of programs:${RESET}" 
+    echo -e "          -> ${LIST_ALL_PROGRAMS[@]}"
 }
 
 usage_long() {
+
     local pager=$(git config --get core.pager)
     #${GIT_PAGER:-${pager:-${PAGER:-less -FRSX}}} << EOF
     echo -e "\n
@@ -1086,8 +1165,9 @@ usage_long() {
         . install
         . purge
 
-    ${YELLOW}LIST OF PROGRAMS${RESET}
-	    . ${BOLDGREEN}qt${RESET} : Installation of the Library Qt (open source version). It is downloaded the installer. 
+    ${YELLOW}LIST OF PROGRAMS${RESET} ${RED}- in the brackets the command to pass to the program${RESET}
+
+	    . ${BOLDGREEN}qt (qt|QT|Qt)${RESET} : Installation of the Library Qt (open source version). It is downloaded the installer. 
                 It is possible to install:
                     . The library
                     . Qt creator
@@ -1099,25 +1179,36 @@ usage_long() {
                     * --d_path to specify where do you want the installed to be downloaded.
                     * --source: the installation from the source is not yet ready    
 
- 	    . ${BOLDGREEN}androidstudio|android${RESET} : Installation of the IDE android studio.
+ 	    . ${BOLDGREEN}Android Studio (androidstudio|ANDROIDSTUDIO)${RESET} : Installation of the IDE android studio.
                 . ${RED}INSTALLATION NOTE:${RESET}
                     * --d_path indicate the location where the Android Studio Zip is download  
                     * --opt indicate where the program is installed. The default location is '/opt'
 
- 	    . ${BOLDGREEN}wxWidgets${RESET} : Installation of the C++ library wxWidgets
+ 	    . ${BOLDGREEN}wxWidgets$ (wxwidgets|wxWidgets|WXWIDGETS){RESET} : Installation of the C++ library wxWidgets
                 . ${RED}INSTALLATION NOTE:${RESET}
                     * --d_path indicate the location where the git repository is going to be cole
                     * --opt: you can use this option to specify the options of the configuration, the defoult are
                              ${MAGENTA}--enable-unicode --enable-debug --with-opengl${RESET}
 
- 	    . ${BOLDGREEN}visual studio code${RESET}
-	    . ${BOLDGREEN}git${RESET}
+ 	    . ${BOLDGREEN}visual studio code (vscode|VSCODE)${RESET} Installation if the IDE Visual Studio Code.
+                It is possible to install 
+                    . vscode from source
+                    . vscode using the pakage menager ${YELLOW}umake${RESET}
+                . ${RED}INSTALLATION NOTE:${RESET} 
+                    * --opt indicate the option for the installation: default is --arch=64 
+                        (TODO: use this to pass the extantion to install ... )
+
+	    . ${BOLDGREEN}git (git|GIT)${RESET} : Installation of the gnu Version Control git. 
+                It is possible to install: 
+                    . git via the pakage manager ${YELLOW}apt${RESET}
+                    . git from source (this is useful if one needs the debugging symbols)
+
 	    . ${BOLDGREEN}tree${RESET}
 	    . ${BOLDGREEN}screen${RESET}
 	    . ${BOLDGREEN}ddd${RESET}
 	    . ${BOLDGREEN}cgdb${RESET}
+	    . ${BOLDGREEN}tess-two${RESET}
 	    . ${BOLDGREEN}tesseract${RESET}
-	    . ${BOLDGREEN}help${RESET} : Shows this help screen.
 	    . ${BOLDGREEN}gnome${RESET}
 	    . ${BOLDGREEN}cmake${RESET}
 	    . ${BOLDGREEN}automake${RESET}
@@ -1137,9 +1228,10 @@ usage_long() {
 # Main Function 
 #---------------
 main(){
-    save_log_file "********************************" "lunch settiX"
     parse_arguments "$@"
 
+    save_log_file "********************************" "lunch settiX"
+    
     if [[ "$ALL" == true ]]; then
         debug "Create list of all programs"
         LIST_PROGRAMS=("${LIST_ALL_PROGRAMS[@]}")
