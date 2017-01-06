@@ -36,7 +36,7 @@ ACTION="install"
 ALL=false
 EXCLUDE=false
 
-DEBUGGING=false
+DEBUGGING=true
 LOG_FILE="$HOME/.settiX"
 
 PATH_TAG="--d_path"
@@ -47,7 +47,7 @@ LIST_EXCLUDE=()
 # LIST_APT=
 
 LIST_ALL_PROGRAMS=("git" "qt" "vscode" "screen" "tree" "ccgdb" "ddd" "tesseract" "androidstudio" "wxWidgets")
-LIST_ALL_PROGRAMS+=("gnome" "cmake" "automake" "tex-all" "tess-two")
+LIST_ALL_PROGRAMS+=("gnome" "cmake" "automake" "tex-all" "tess-two" "emacs")
 
 BUILD_FROM_SOURCE=false
 # PATH_DOWNLOAD=$HOME"/Download/"
@@ -297,7 +297,7 @@ action_vscode() {
 
 install_dependencies_vscode() {
 
-    if [[ "$1" ]]; then
+    if [[ -z "$1" ]]; then
         echo "TODO:"
     else
         sudo add-apt-repository ppa:ubuntu-desktop/ubuntu-make
@@ -425,7 +425,7 @@ action_git_source() {
 
 install_dependencies_cgdb() {
 
-    if [[ "$1" ]]; then
+    if [[ -z "$1" ]]; then
         echo "TODO:"
     else
         use_apt "libncurses5-dev" "flex" "help2man" "libreadline6" "libreadline6-dev"
@@ -508,6 +508,94 @@ action_cgdb() {
         unistall_cgdb "$@"
    fi 
 
+}
+
+# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+# -----------------------------------------------------------------------------------------------#
+#                                         EMACS                                                  #
+# -----------------------------------------------------------------------------------------------#
+
+GIT_EMACS="https://github.com/emacs-mirror/emacs.git"
+
+
+install_dependencies_emacs() {
+
+    if [[ -z "$1" ]]; then
+        echo "TODO:"
+    else
+	# this may fail 'build-dep' if in 'Software and Update' is not checked Source Code.
+        use_apt "texinfo" "build-dep emacs24" "build-essential" "libwebkit-dev" "libx11-dev" "libxpm-dev" "libjpeg-dev" "libpng-dev" "libgif-dev" "libtiff-dev" "libgtk-3-dev" "libncurses-dev" "libxpm-dev" "automake autoconf -y"
+    fi
+
+}
+
+install_emacs() {
+
+    printf_action "INSTALLING emacs 25.1 from source"
+    
+    local source="$1"
+    local name="$2"
+    local path="$3"
+    local opt="$4"
+    
+    local installed=$(check_which_program "emacs")
+    if [[ ! -z $installed ]]; then
+        echo -e "$installed"
+        echo "The program seems to be already installed"
+        echo -e "Do you want to install it anyway (yes/no) " 
+        read input
+
+        if [[ "$input" == "n"* ]]; then
+            save_log_file "Aborting installation $name" 
+            return
+        fi
+    fi
+
+    mkdir -p "$path"
+    echo entering "$path"
+    cd "$path" 
+
+    install_dependencies_emacs "$source"
+
+    if [[ ! -d "emacs" ]]; then
+	    git clone "$GIT_EMACS"
+    fi
+    
+    cd emacs
+
+    #NOTE: the xwidget option did not work for me.
+    # I followed also what suggested in
+    # http://ubuntuhandbook.org/index.php/2016/09/install-gnu-emacs-25-1-in-ubuntu-16-04/
+    # ./configure --with-cairo --with-xwidgets --with-x-toolkit=gtk3
+    
+
+    ./autogen.sh && \
+    ./configure $opt  && \
+    make && \
+    sudo make install
+    
+    if [[ "$CLEAN_BUILD" == true ]]; then
+        make clean
+    fi
+
+}
+
+unistall_emacs() {
+
+    printf_action "UNISTALLING emacs"
+    # TODO:
+    install_dependencies_emacs
+}
+
+
+action_emacs(){
+
+    if [[ "$ACTION" == "install" ]]; then
+        install_emacs "$@"
+    else
+        unistall_emacs "$@"
+    fi
 }
 
 # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -1072,7 +1160,11 @@ parse_actions() {
                 debug "${MAGENTA}PROGRAM ACTION list: " "name: ${GREEN}$name_program${RESET}" "from source: ${GREEN}$source${RESET}" "path: ${GREEN}$path_download${RESET}" "options: ${GREEN}$opt_install${RESET}"
                 action_wxWidgets "$source" "$name_program" "$path_download" "$opt_install"
                 ;;
-            git|tree|screen|ddd|tex-all|textstudio|textlive*)
+            emacs|EMACS)
+                debug "${MAGENTA}PROGRAM ACTION list: " "name: ${GREEN}$name_program${RESET}" "from source: ${GREEN}$source${RESET}" "path: ${GREEN}$path_download${RESET}" "options: ${GREEN}$opt_install${RESET}"
+                action_emacs "$source" "$name_program" "$path_download" "$opt_install"
+                ;;
+	    git|tree|screen|ddd|tex-all|textstudio|textlive*)
 
                 if [[ ! "$source" ]]; then
                     case "$name_program" in
@@ -1229,6 +1321,16 @@ usage_long() {
                         - note that on Ubuntu 16.04 it seems that the combination <C-T> does not open the tty-window.
                 . ${RED}INSTALLATION NOTE:${RESET}
                     * you can specify the installation path with the option 'opt path/of/installation'. Default is /usr/local
+
+	    . ${BOLDGREEN}emacs (EMACS|emacs)${RESET} : Installation of the text editor ${GREEN}emacs{RESET}
+                you can choose to install 
+                    * It is download the mirror repository at GitHub 
+
+                . ${RED}INSTALLATION NOTE:${RESET}
+                    * To install with xwidgets:
+		                - you can pass as option --with-xwidgets --with-x-toolkit=gtk3
+		                - In order to install the dependencies via apt, in Ubuntu in 'Software and Update' it has to be allowed to download from the internet source-code.
+
         
 	    . ${BOLDGREEN}tess-two${RESET}
 	    . ${BOLDGREEN}tesseract${RESET}
