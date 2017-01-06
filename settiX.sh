@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 #
 # -------------------------------------------------------------------------------------------------
+<<<<<<< HEAD
 # SCRIPT TO INSTALLA AND SET LINUX-DEBIAN
+=======
+# SCRIPT TO INSTALLA AND SET SOME USEFUL PROGRAMS AND LIBRARIES ON LINUX-DEBIAN
+>>>>>>> c90cc831a7c1df97a64178d9963cc3e73474b770
 # -------------------------------------------------------------------------------------------------
 #
 # settix [install|purge] 
@@ -46,7 +50,11 @@ LIST_PROGRAMS=()
 LIST_EXCLUDE=()
 # LIST_APT=
 
+<<<<<<< HEAD
 LIST_ALL_PROGRAMS=("git" "qt" "vscode" "screen" "tree" "cgdb" "ddd" "tesseract" "androidstudio" "wxWidgets")
+=======
+LIST_ALL_PROGRAMS=("git" "qt" "vscode" "screen" "tree" "ccgdb" "ddd" "tesseract" "androidstudio" "wxWidgets")
+>>>>>>> c90cc831a7c1df97a64178d9963cc3e73474b770
 LIST_ALL_PROGRAMS+=("gnome" "cmake" "automake" "tex-all" "tess-two")
 
 BUILD_FROM_SOURCE=false
@@ -465,8 +473,23 @@ install_cgdb() {
     elif [[ "$opt" != *"--prefix"* ]]; then
         opt=$opt" --prefix=/usr/local"
     fi
+    if [[ "$name_program" == "ccdgb" ]]; then 
+        if [[ ! -d "ccgdb" ]]; then
+            git clone https://github.com/dcohenp/cgdb.git "$name_program"  #old version (.c - but C-T for input windows worḱs on Ubuntu)
+        fi
+        cd "$name_program"
+        # use the vertical patch
+        git checkout 0391e9c5df3cdc5b6ffde73457723bc0e643d29c
 
-    git clone git://github.com/cgdb/cgdb.git && \
+    else
+        if [[ ! -d "cgdb" ]]; then
+            git clone git://github.com/cgdb/cgdb.git "$name_program"
+        fi
+        
+        cd "$name_program"
+    fi
+    # common
+
     ./autogen.sh && \
     ./configure $opt  && \
     make && \
@@ -1036,7 +1059,7 @@ parse_actions() {
                 debug "${MAGENTA}PROGRAM ACTION list: " "name: ${GREEN}$name_program${RESET}" "from source: ${GREEN}$source${RESET}" "path: ${GREEN}$path_download${RESET}" "options: ${GREEN}$opt_install${RESET}"
                 action_vscode "$source" "$name_program" "$path_download" "$opt_install"
                 ;;
-            cgdb)
+            cgdb|ccgdb)
                 debug "${MAGENTA}PROGRAM ACTION list: " "name: ${GREEN}$name_program${RESET}" "from source: ${GREEN}$source${RESET}" "path: ${GREEN}$path_download${RESET}" "options: ${GREEN}$opt_install${RESET}"
                 action_cgdb "$source" "$name_program" "$path_download" "$opt_install"
                 ;;
@@ -1206,7 +1229,19 @@ usage_long() {
 	    . ${BOLDGREEN}tree${RESET}
 	    . ${BOLDGREEN}screen${RESET}
 	    . ${BOLDGREEN}ddd${RESET}
+<<<<<<< HEAD
 	    . ${BOLDGREEN}cgdb${RESET}
+=======
+
+	    . ${BOLDGREEN}cgdb${RESET} : Installation of the lightweight console frontend to the GNU debugger ${GREEN}cgdb{RESET}
+                you can choose to install 
+                    * the C-version with the vertical patch (default for --all option) - program name ccgdb
+                    * the cpp-version (with the vertical patch)  - program name cgdb
+                        - note that on Ubuntu 16.04 it seems that the combination <C-T> does not open the tty-window.
+                . ${RED}INSTALLATION NOTE:${RESET}
+                    * you can specify the installation path with the option 'opt path/of/installation'. Default is /usr/local
+        
+>>>>>>> c90cc831a7c1df97a64178d9963cc3e73474b770
 	    . ${BOLDGREEN}tess-two${RESET}
 	    . ${BOLDGREEN}tesseract${RESET}
 	    . ${BOLDGREEN}gnome${RESET}
