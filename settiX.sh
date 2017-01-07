@@ -483,7 +483,8 @@ install_cgdb() {
     # common
 
     ./autogen.sh && \
-    ./configure $opt  && \
+    opt_tmp = ($opt)
+    ./configure $opt_tmp  && \
     make && \
     sudo make install
     
@@ -517,7 +518,7 @@ action_cgdb() {
 # -----------------------------------------------------------------------------------------------#
 
 GIT_EMACS="https://github.com/emacs-mirror/emacs.git"
-
+TRALBAR_EMACS="https://ftp.gnu.org/gnu/emacs/emacs-25.1.tar.gz"
 
 install_dependencies_emacs() {
 
@@ -525,7 +526,8 @@ install_dependencies_emacs() {
         echo "TODO:"
     else
 	# this may fail 'build-dep' if in 'Software and Update' is not checked Source Code.
-        use_apt "texinfo" "build-dep emacs24" "build-essential" "libwebkit-dev" "libx11-dev" "libxpm-dev" "libjpeg-dev" "libpng-dev" "libgif-dev" "libtiff-dev" "libgtk-3-dev" "libncurses-dev" "libxpm-dev" "automake autoconf -y"
+        use_apt "texinfo" "build-dep emacs24" "build-essential"
+	use_apt "libwebkit-dev" "libx11-dev" "libxpm-dev" "libjpeg-dev" "libpng-dev" "libgif-dev" "libtiff-dev" "libgtk-3-dev" "libncurses-dev" "libxpm-dev" "automake" "autoconf"
     fi
 
 }
@@ -557,12 +559,14 @@ install_emacs() {
     cd "$path" 
 
     install_dependencies_emacs "$source"
-
-    if [[ ! -d "emacs" ]]; then
-	    git clone "$GIT_EMACS"
+    # problem with the git repository ....
+    if [[ ! -d "emacs-25.1" ]]; then
+	    #git clone "$GIT_EMACS"
+        wget $TRALBAR_EMACS
+        tar -xvzf emacs-25.1.tar.gz
     fi
     
-    cd emacs
+    cd emacs-25.1
 
     #NOTE: the xwidget option did not work for me.
     # I followed also what suggested in
@@ -570,8 +574,12 @@ install_emacs() {
     # ./configure --with-cairo --with-xwidgets --with-x-toolkit=gtk3
     
 
-    ./autogen.sh && \
-    ./configure $opt  && \
+    #./autogen.sh && \
+    #./autogen.sh git && \
+    # necessary, otherwise configure read the name of --with from the the first - to the end of opt.
+    opt_tmp=($opt)
+    ./configure $opt_tmp # --with-cairo --with-xwidgets --with-x-toolkit=gtk3 
+    #"$opt"  && \
     make && \
     sudo make install
     
@@ -993,7 +1001,8 @@ install_wxWidgets() {
     cd wxWidgets 2>>$LOG_FILE
     mkdir gtk-build 2>>$LOG_FILE
     cd gtk-build 2>>$LOG_FILE
-    ../configure $opt 2>>$LOG_FILE
+    opt_tmp=($opt)
+    ../configure $opt_tmp 2>>$LOG_FILE
     make 2>>$LOG_FILE
     make install 2>>$LOG_FILE
     sudo ldconfig
