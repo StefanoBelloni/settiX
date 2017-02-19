@@ -483,7 +483,7 @@ install_cgdb() {
     # common
 
     ./autogen.sh && \
-    opt_tmp = ($opt)
+    opt_tmp=($opt)
     ./configure $opt_tmp  && \
     make && \
     sudo make install
