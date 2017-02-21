@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
 #
 # -------------------------------------------------------------------------------------------------
-<<<<<<< HEAD
-# SCRIPT TO INSTALLA AND SET LINUX-DEBIAN
-=======
 # SCRIPT TO INSTALLA AND SET SOME USEFUL PROGRAMS AND LIBRARIES ON LINUX-DEBIAN
->>>>>>> c90cc831a7c1df97a64178d9963cc3e73474b770
 # -------------------------------------------------------------------------------------------------
 #
 # settix [install|purge] 
@@ -40,7 +36,7 @@ ACTION="install"
 ALL=false
 EXCLUDE=false
 
-DEBUGGING=false
+DEBUGGING=true
 LOG_FILE="$HOME/.settiX"
 
 PATH_TAG="--d_path"
@@ -50,12 +46,8 @@ LIST_PROGRAMS=()
 LIST_EXCLUDE=()
 # LIST_APT=
 
-<<<<<<< HEAD
 LIST_ALL_PROGRAMS=("git" "qt" "vscode" "screen" "tree" "cgdb" "ddd" "tesseract" "androidstudio" "wxWidgets")
-=======
-LIST_ALL_PROGRAMS=("git" "qt" "vscode" "screen" "tree" "ccgdb" "ddd" "tesseract" "androidstudio" "wxWidgets")
->>>>>>> c90cc831a7c1df97a64178d9963cc3e73474b770
-LIST_ALL_PROGRAMS+=("gnome" "cmake" "automake" "tex-all" "tess-two")
+LIST_ALL_PROGRAMS+=("gnome" "cmake" "automake" "tex-all" "tess-two" "emacs" "vim")
 
 BUILD_FROM_SOURCE=false
 # PATH_DOWNLOAD=$HOME"/Download/"
@@ -160,6 +152,66 @@ use_check() {
 }
 
 # it is enough call which "list of program to test"
+# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+# -----------------------------------------------------------------------------------------------#
+#                                   Vim installation                                              #
+# -----------------------------------------------------------------------------------------------#
+VIM_ULTIMATE_GIT="https://github.com/amix/vimrc.git"
+
+action_vim(){
+
+    if [[ "$ACTION" == "install" ]]; then
+        install_vim "$@"
+    else
+        unistall_vim "$@"
+    fi 
+
+}
+
+
+install_vim() {
+
+    local source="$1"
+    local name="$2"
+    local path="$3"
+    local opt="$4"
+
+    debug "source:$source" "name: $name" "path: $path" "options: $opt"
+
+    local installed=$(check_which_program "vim")
+    if [[ ! -z $installed ]]; then
+        echo -e "$installed"
+        echo "The program seems to be already installed"
+        echo -e "Do you want to install it anyway (yes/no) " 
+        read input
+
+        if [[ "$input" == "n"* ]]; then
+            save_log_file "Aborting installation $name" 
+            return
+        fi
+    fi
+
+    use_apt "vim"
+    use_apt "vim-gnome"
+
+
+    if [[ $opt != "no-ultimate" ]]; then # from source
+        
+	    git clone VIM_ULTIMATE_GIT ~/.vim_runtime && \
+	    # plus - the colors are strage
+	    # sh ~/.vim_runtime/install_awesome_vimrc.sh
+        # basic version
+        sh ~/.vim_runtime/install_basic_vimrc.sh
+    fi
+
+} 
+
+unistall_vim(){
+    
+    printf_action "UNISTALLING VIM"
+
+}
 
 # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -305,7 +357,7 @@ action_vscode() {
 
 install_dependencies_vscode() {
 
-    if [[ "$1" ]]; then
+    if [[ "$1" == true ]]; then
         echo "TODO:"
     else
         sudo add-apt-repository ppa:ubuntu-desktop/ubuntu-make
@@ -347,7 +399,7 @@ install_vscode() {
 
     install_dependencies_vscode $source
 
-    if [[ $source ]]; then # from source
+    if [[ $source == true ]]; then # from source
         mkdir -p $path && \
         cd $path && \
         git clone $VS_GIT && \
@@ -433,7 +485,7 @@ action_git_source() {
 
 install_dependencies_cgdb() {
 
-    if [[ "$1" ]]; then
+    if [[ -z "$1" ]]; then
         echo "TODO:"
     else
         use_apt "libncurses5-dev" "flex" "help2man" "libreadline6" "libreadline6-dev"
@@ -491,7 +543,8 @@ install_cgdb() {
     # common
 
     ./autogen.sh && \
-    ./configure $opt  && \
+    opt_tmp=($opt)
+    ./configure $opt_tmp  && \
     make && \
     sudo make install
     
@@ -516,6 +569,102 @@ action_cgdb() {
         unistall_cgdb "$@"
    fi 
 
+}
+
+# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+# -----------------------------------------------------------------------------------------------#
+#                                         EMACS                                                  #
+# -----------------------------------------------------------------------------------------------#
+
+GIT_EMACS="https://github.com/emacs-mirror/emacs.git"
+TRALBAR_EMACS="https://ftp.gnu.org/gnu/emacs/emacs-25.1.tar.gz"
+
+install_dependencies_emacs() {
+
+    if [[ "$1" == true ]]; then
+        echo "TODO:"
+    else
+	# this may fail 'build-dep' if in 'Software and Update' is not checked Source Code.
+    use_apt "texinfo" "build-essential"
+	sudo apt build-dep emacs24
+    use_apt "libwebkit-dev" "libx11-dev" "libxpm-dev" "libjpeg-dev" "libpng-dev" "libgif-dev" "libtiff-dev" "libgtk-3-dev" "libncurses-dev" "libxpm-dev" "automake" "autoconf"
+    fi
+
+}
+
+install_emacs() {
+
+    printf_action "INSTALLING emacs 25.1 from source"
+    
+    local source="$1"
+    local name="$2"
+    local path="$3"
+    local opt="$4"
+    
+    local installed=$(check_which_program "emacs")
+    if [[ ! -z $installed ]]; then
+        echo -e "$installed"
+        echo "The program seems to be already installed"
+        echo -e "Do you want to install it anyway (yes/no) " 
+        read input
+
+        if [[ "$input" == "n"* ]]; then
+            save_log_file "Aborting installation $name" 
+            return
+        fi
+    fi
+
+    mkdir -p "$path"
+    echo entering "$path"
+    cd "$path" 
+
+    install_dependencies_emacs "$source"
+    # problem with the git repository ....
+    if [[ ! -d "emacs-25.1" ]]; then
+	    #git clone "$GIT_EMACS"
+        wget $TRALBAR_EMACS
+        tar -xvzf emacs-25.1.tar.gz
+    fi
+    
+    cd emacs-25.1
+
+    #NOTE: the xwidget option did not work for me.
+    # I followed also what suggested in
+    # http://ubuntuhandbook.org/index.php/2016/09/install-gnu-emacs-25-1-in-ubuntu-16-04/
+    # ./configure --with-cairo --with-xwidgets --with-x-toolkit=gtk3
+    
+
+    #./autogen.sh && \
+    #./autogen.sh git && \
+    # necessary, otherwise configure read the name of --with from the the first - to the end of opt.
+    opt_tmp=($opt)
+    ./configure $opt_tmp # --with-cairo --with-xwidgets --with-x-toolkit=gtk3 
+    #"$opt"  && \
+    make && \
+    sudo make install
+    
+    if [[ "$CLEAN_BUILD" == true ]]; then
+        make clean
+    fi
+
+}
+
+unistall_emacs() {
+
+    printf_action "UNISTALLING emacs"
+    # TODO:
+    # install_dependencies_emacs
+}
+
+
+action_emacs(){
+
+    if [[ "$ACTION" == "install" ]]; then
+        install_emacs "$@"
+    else
+        unistall_emacs "$@"
+    fi
 }
 
 # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -913,7 +1062,8 @@ install_wxWidgets() {
     cd wxWidgets 2>>$LOG_FILE
     mkdir gtk-build 2>>$LOG_FILE
     cd gtk-build 2>>$LOG_FILE
-    ../configure $opt 2>>$LOG_FILE
+    opt_tmp=($opt)
+    ../configure $opt_tmp 2>>$LOG_FILE
     make 2>>$LOG_FILE
     make install 2>>$LOG_FILE
     sudo ldconfig
@@ -1050,37 +1200,34 @@ parse_actions() {
 
         save_log_file "s:$source" "n:$name_program" "p:$path_download" "o:$opt_install"
 
+        debug "${MAGENTA}PROGRAM ACTION list: " "name: ${GREEN}$name_program${RESET}" "from source: ${GREEN}$source${RESET}" "path: ${GREEN}$path_download${RESET}" "options: ${GREEN}$opt_install${RESET}"
         case "$name_program" in
             qt|QT|Qt)
-                debug "${MAGENTA}PROGRAM ACTION list: " "name: ${GREEN}$name_program${RESET}" "from source: ${GREEN}$source${RESET}" "path: ${GREEN}$path_download${RESET}" "options: ${GREEN}$opt_install${RESET}"
                 action_qt "$source" "$name_program" "$path_download" "$opt_install"
                 ;;
             vscode|VSCODE)    
-                debug "${MAGENTA}PROGRAM ACTION list: " "name: ${GREEN}$name_program${RESET}" "from source: ${GREEN}$source${RESET}" "path: ${GREEN}$path_download${RESET}" "options: ${GREEN}$opt_install${RESET}"
                 action_vscode "$source" "$name_program" "$path_download" "$opt_install"
                 ;;
             cgdb|ccgdb)
-                debug "${MAGENTA}PROGRAM ACTION list: " "name: ${GREEN}$name_program${RESET}" "from source: ${GREEN}$source${RESET}" "path: ${GREEN}$path_download${RESET}" "options: ${GREEN}$opt_install${RESET}"
                 action_cgdb "$source" "$name_program" "$path_download" "$opt_install"
                 ;;
             tesseract)
-                debug "${MAGENTA}PROGRAM ACTION list: " "name: ${GREEN}$name_program${RESET}" "from source: ${GREEN}$source${RESET}" "path: ${GREEN}$path_download${RESET}" "options: ${GREEN}$opt_install${RESET}"
                 action_tesseract "$source" "$name_program" "$path_download" "$opt_install"
                 ;;
             tess-two|tesseract_android)
-                debug "${MAGENTA}PROGRAM ACTION list: " "name: ${GREEN}$name_program${RESET}" "from source: ${GREEN}$source${RESET}" "path: ${GREEN}$path_download${RESET}" "options: ${GREEN}$opt_install${RESET}"
                 action_tesseract_studio "$source" "$name_program" "$path_download" "$opt_install"
                 ;;
 
             android|androidstudio)
-                debug "${MAGENTA}PROGRAM ACTION list: " "name: ${GREEN}$name_program${RESET}" "from source: ${GREEN}$source${RESET}" "path: ${GREEN}$path_download${RESET}" "options: ${GREEN}$opt_install${RESET}"
                 action_androidstudio "$source" "$name_program" "$path_download" "$opt_install"
                 ;;
             wxWidgets|wxwidgets)
-                debug "${MAGENTA}PROGRAM ACTION list: " "name: ${GREEN}$name_program${RESET}" "from source: ${GREEN}$source${RESET}" "path: ${GREEN}$path_download${RESET}" "options: ${GREEN}$opt_install${RESET}"
                 action_wxWidgets "$source" "$name_program" "$path_download" "$opt_install"
                 ;;
-            git|tree|screen|ddd|tex-all|textstudio|textlive*)
+            emacs|EMACS)
+                action_emacs "$source" "$name_program" "$path_download" "$opt_install"
+                ;;
+	        git|tree|screen|ddd|tex-all|textstudio|textlive*)
 
                 if [[ ! "$source" ]]; then
                     case "$name_program" in
@@ -1103,15 +1250,17 @@ parse_actions() {
                         automake)
                             name_program="automake"
                             ;;
-                        textstudio)
-                            name_program="textstudio"
+                        texstudio)
+                            name_program="texstudio"
                             ;;
                         textlive*)
-                            name_program="textlive-full"
+                            name_program="texlive-full"
                             ;;
                         tex-all)
-                            name_program="textstudio" 
-                            name_program+=" textlive-studio"
+                            name_program="texstudio texlive-full"
+                            ;;
+                        screen)
+                            name_program="screen"
                             ;;
                         *)
                             echo -e "${BLUE}WARNING: ${RESET}" "Unknow program" 
@@ -1170,6 +1319,8 @@ usage() {
     echo -e "                   [ ${CYAN}[ --source ]${RESET} name_program ${MAGENTA}[--d_path installation_path]${RESET} ${BLUE}[--opt installation_options]${RESET} ]"
     echo -e "${RED}List of programs:${RESET}" 
     echo -e "          -> ${LIST_ALL_PROGRAMS[@]}"
+    echo -e "${YELLOW}path default download:${RESET}" 
+    echo -e "          -> ${HOME}/Documents/SourceCode/${RESET}"
 }
 
 usage_long() {
@@ -1229,10 +1380,6 @@ usage_long() {
 	    . ${BOLDGREEN}tree${RESET}
 	    . ${BOLDGREEN}screen${RESET}
 	    . ${BOLDGREEN}ddd${RESET}
-<<<<<<< HEAD
-	    . ${BOLDGREEN}cgdb${RESET}
-=======
-
 	    . ${BOLDGREEN}cgdb${RESET} : Installation of the lightweight console frontend to the GNU debugger ${GREEN}cgdb{RESET}
                 you can choose to install 
                     * the C-version with the vertical patch (default for --all option) - program name ccgdb
@@ -1240,8 +1387,17 @@ usage_long() {
                         - note that on Ubuntu 16.04 it seems that the combination <C-T> does not open the tty-window.
                 . ${RED}INSTALLATION NOTE:${RESET}
                     * you can specify the installation path with the option 'opt path/of/installation'. Default is /usr/local
+
+	    . ${BOLDGREEN}emacs (EMACS|emacs)${RESET} : Installation of the text editor ${GREEN}emacs{RESET}
+                you can choose to install 
+                    * It is download the mirror repository at GitHub 
+
+                . ${RED}INSTALLATION NOTE:${RESET}
+                    * To install with xwidgets:
+		                - you can pass as option --with-xwidgets --with-x-toolkit=gtk3
+		                - In order to install the dependencies via apt, in Ubuntu in 'Software and Update' it has to be allowed to download from the internet source-code.
+
         
->>>>>>> c90cc831a7c1df97a64178d9963cc3e73474b770
 	    . ${BOLDGREEN}tess-two${RESET}
 	    . ${BOLDGREEN}tesseract${RESET}
 	    . ${BOLDGREEN}gnome${RESET}
