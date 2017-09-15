@@ -47,7 +47,7 @@ LIST_EXCLUDE=()
 # LIST_APT=
 
 LIST_ALL_PROGRAMS=("git" "qt" "vscode" "screen" "tree" "cgdb" "ddd" "tesseract" "androidstudio" "wxWidgets")
-LIST_ALL_PROGRAMS+=("gnome" "cmake" "automake" "tex-all" "tess-two" "emacs" "vim")
+LIST_ALL_PROGRAMS+=("gnome" "cmake" "automake" "tex-all" "tess-two" "emacs" "vim" "nasm" "ggtags" "codeblocks" "codelite")
 
 BUILD_FROM_SOURCE=false
 # PATH_DOWNLOAD=$HOME"/Download/"
@@ -153,6 +153,77 @@ use_check() {
 
 # it is enough call which "list of program to test"
 # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+# -----------------------------------------------------------------------------------------------#
+#                                   Vim installation                                              #
+# -----------------------------------------------------------------------------------------------#
+URL_GGTAGS="http://tamacom.com/global/global-6.4.tar.gz"
+
+action_ggtags(){
+
+    if [[ "$ACTION" == "install" ]]; then
+        install_ggtags "$@"
+    else
+        unistall_ggatsg "$@"
+    fi 
+
+}
+
+install_ggtags_dependencies(){
+    echo "install package for GNU global..."
+    sudo apt-get update
+    sudo apt-get -y install curl
+    sudo apt-get -y install wget
+    sudo apt-get -y install ncurses-dev
+    sudo apt-get -y install exuberant-ctags
+     
+}
+
+install_ggtags() {
+
+    printf_action "INSTALLING GNU GLOBALS"
+
+    local source="$1"
+    local name="$2"
+    local path="$3"
+    local opt="$4"
+
+    debug "source:$source" "name: $name" "path: $path" "options: $opt"
+
+    local installed=$(check_which_program "ggtags")
+    if [[ ! -z $installed ]]; then
+        echo -e "$installed"
+        echo "The program seems to be already installed"
+        echo -e "Do you want to install it anyway (yes/no) " 
+        read input
+
+        if [[ "$input" == "n"* ]]; then
+            save_log_file "Aborting installation $name" 
+            return
+        fi
+    fi
+    
+    install_ggtags_dependencies
+
+    echo "install GNU global..."
+	mkdir -p $path 2>>$LOG_FILE 
+    cd $path 2>>$LOG_FILE
+    wget $URL_GGTAGS
+    tar zxvf global-6.4.tar.gz
+    cd global-6.4
+    ./configure
+    make
+    sudo make install
+
+} 
+
+unistall_ggtags(){
+    
+    printf_action "UNISTALLING VIM"
+
+}
+
+# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
 
 # -----------------------------------------------------------------------------------------------#
 #                                   Vim installation                                              #
@@ -194,11 +265,15 @@ install_vim() {
 
     use_apt "vim"
     use_apt "vim-gnome"
-
+    sudo apt-get install -y python-software-properties software-properties-common
+    # add this repo so that vim has python 4? compiled in to support plugins like gundo
+    add-apt-repository -y ppa:pi-rho/dev
+    apt-get update
+    apt-get install -y vim-gtk
 
     if [[ $opt != "no-ultimate" ]]; then # from source
         
-	    git clone VIM_ULTIMATE_GIT ~/.vim_runtime && \
+	    git clone $VIM_ULTIMATE_GIT ~/.vim_runtime && \
 	    # plus - the colors are strage
 	    # sh ~/.vim_runtime/install_awesome_vimrc.sh
         # basic version
@@ -488,7 +563,7 @@ install_dependencies_cgdb() {
     if [[ -z "$1" ]]; then
         echo "TODO:"
     else
-        use_apt "libncurses5-dev" "flex" "help2man" "libreadline6" "libreadline6-dev"
+        use_apt "libncurses5-dev" "flex" "help2man" "libreadline6" "libreadline6-dev" "automake" "texinfo"
     fi
 
 }
@@ -588,7 +663,8 @@ install_dependencies_emacs() {
 	# this may fail 'build-dep' if in 'Software and Update' is not checked Source Code.
     use_apt "texinfo" "build-essential"
 	sudo apt build-dep emacs24
-    use_apt "libwebkit-dev" "libx11-dev" "libxpm-dev" "libjpeg-dev" "libpng-dev" "libgif-dev" "libtiff-dev" "libgtk-3-dev" "libncurses-dev" "libxpm-dev" "automake" "autoconf"
+    use_apt "libwebkit-dev" "libx11-dev" "libxpm-dev" "libjpeg-dev" "libpng-dev" "libgif-dev" "libwebkitgtk-3.0-dev"
+    use_apt "libtiff-dev" "libgtk-3-dev" "libncurses-dev" "libxpm-dev" "automake" "autoconf"
     fi
 
 }
@@ -639,7 +715,8 @@ install_emacs() {
     #./autogen.sh git && \
     # necessary, otherwise configure read the name of --with from the the first - to the end of opt.
     opt_tmp=($opt)
-    ./configure $opt_tmp # --with-cairo --with-xwidgets --with-x-toolkit=gtk3 
+    #./configure $opt_tmp # --with-cairo --with-xwidgets --with-x-toolkit=gtk3 
+    ./configure --with-cairo --with-xwidgets --with-x-toolkit=gtk3 
     #"$opt"  && \
     make && \
     sudo make install
@@ -1096,6 +1173,7 @@ parse_arguments() {
     local tmp_source=false
 
     while test $# != 0
+
     do
         arg="$1"
         debug "PARSING THE OPTION:" "$1"
@@ -1217,7 +1295,9 @@ parse_actions() {
             tess-two|tesseract_android)
                 action_tesseract_studio "$source" "$name_program" "$path_download" "$opt_install"
                 ;;
-
+            ggtags|gnuglobal)
+                action_ggtags "$source" "$name_program" "$path_download" "$opt_install"
+                ;;
             android|androidstudio)
                 action_androidstudio "$source" "$name_program" "$path_download" "$opt_install"
                 ;;
@@ -1227,13 +1307,15 @@ parse_actions() {
             emacs|EMACS)
                 action_emacs "$source" "$name_program" "$path_download" "$opt_install"
                 ;;
-	        git|tree|screen|ddd|tex-all|textstudio|textlive*)
+           vim)
+              action_vim "$source" "$name_program" "$path_download" "$opt_install"
+                ;;
+	    git|tree|screen|ddd|tex-all|texstudio|textlive*|cmake|Cmake|CMake|gnome|gnome_pkg|nasm|codeblocks|codelite)
 
                 if [[ ! "$source" ]]; then
                     case "$name_program" in
                         git)
-                            debug "${MAGENTA}PROGRAM ACTION list: " "name: ${GREEN}$name_program${RESET}" "from source: ${GREEN}$source${RESET}" "path: ${GREEN}$path_download${RESET}" "options: ${GREEN}$opt_install${RESET}"
-                            #action_git_source "$source" "$name_program" "$path_download" "$opt_install"
+                            action_git_source "$source" "$name_program" "$path_download" "$opt_install"
                             ;;
                         *)
                             echo -e "${BLUE}WARNING: ${RESET}" "Unknow program"
@@ -1241,6 +1323,9 @@ parse_actions() {
                     esac    
                 else
                     case "$name_program" in
+                        codelite)
+                            name_program=("codelite" "codelite-plugins")
+                            ;;
                         gnome|gnome_pkg)
                             name_program="libgnome2-bin"
                             ;;
@@ -1257,16 +1342,23 @@ parse_actions() {
                             name_program="texlive-full"
                             ;;
                         tex-all)
-                            name_program="texstudio texlive-full"
+                            name_program="texstudio "
+                            name_program=+" texlive-full"
                             ;;
                         screen)
                             name_program="screen"
+                            ;;
+                        nasm)
+                            name_program="nasm"
+                            ;;
+                        codeblocks)
+                            name_program="codeblocks"
                             ;;
                         *)
                             echo -e "${BLUE}WARNING: ${RESET}" "Unknow program" 
                             echo -e "try with ${GREEN}apt-get${RESET} $ACTION $name_program"
                             save_log_file "WARNING: Unknown Program try apt-get $ACTION $name_program"
-                            use_apt "$name_program" >> $LOG_FILE
+                            use_apt "$name_program" 2>&1 | tee -a $LOG_FILE
                             ;;
 
                     esac
@@ -1404,6 +1496,10 @@ usage_long() {
 	    . ${BOLDGREEN}cmake${RESET}
 	    . ${BOLDGREEN}automake${RESET}
 	    . ${BOLDGREEN}tex-all${RESET}
+	    . ${BOLDGREEN}nasm${RESET}
+	    . ${BOLDGREEN}codelite${RESET}
+	    . ${BOLDGREEN}codeblocks${RESET}
+        . ${BOLDGREEN}gnu globals (ggtags|gnuglobals)${RESET}
 
     ${YELLOW}OPTIONS${RESET}
 	    -h, --help		Shows this help screen.
@@ -1445,3 +1541,8 @@ if [ $# = 0 ]; then
 fi
 
 main "$@"
+
+# videm
+# run sudo apt-get install python python-lxml build-essential gdb cscope global 
+#
+
