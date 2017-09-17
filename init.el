@@ -61,7 +61,7 @@
 
 (add-to-list 'load-path "~/.emacs.d/custom")
 
-(global-linum-mode t)
+
 (require 'linum)
 (global-linum-mode t)
 ;; use customized linum-format: add a addition space after the line number
@@ -70,11 +70,14 @@
 
 (setq linum-format "%4d \u2502 ")
 ;; Required linum off
+(use-package linum-off)
 (require 'linum-off)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; UNDO TREE
+(use-package undo-tree)
+(require 'undo-tree)
 (global-undo-tree-mode)
 
 (defun goto-match-paren (arg)
@@ -171,7 +174,7 @@ vi style of % jumping to matching brace."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  GGTAGS SET UP
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+(use-package ggtags)
 (require 'ggtags)
 (add-hook 'c-mode-common-hook
           (lambda ()
@@ -197,7 +200,7 @@ vi style of % jumping to matching brace."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  COMPANY-MODE
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+(use-package company)
 (require 'company)
 (add-hook 'after-init-hook 'global-company-mode)
 
@@ -238,7 +241,7 @@ vi style of % jumping to matching brace."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (add-hook 'after-init-hook #'global-flycheck-mode)
-
+(use-package flymake-cppcheck)
 (require 'flymake-cppcheck)
 (add-hook 'c-mode-hook 'flymake-cppcheck-load)
 (add-hook 'c++-mode-hook 'flymake-cppcheck-load)

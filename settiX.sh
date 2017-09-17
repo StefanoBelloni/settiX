@@ -4,30 +4,30 @@
 # SCRIPT TO INSTALLA AND SET SOME USEFUL PROGRAMS AND LIBRARIES ON LINUX-DEBIAN
 # -------------------------------------------------------------------------------------------------
 #
-# settix [install|purge] 
-#        [--all|--exclude| [--p] ] 
-#        [[--source] name_program [--d_path installation_path] [--opt installation_options]] 
+# settix [install|purge]
+#        [--all|--exclude| [--p] ]
+#        [[--source] name_program [--d_path installation_path] [--opt installation_options]]
 #
 # -------------------------------------------------------------------------------------------------
 
 # Colors
 RESET="\033[0m"
-BLACK="\033[30m"  
+BLACK="\033[30m"
 RED="\033[31m"
-GREEN="\033[32m"    
-YELLOW="\033[33m"   
-BLUE="\033[34m"  
-MAGENTA="\033[35m" 
-CYAN="\033[36m" 
-WHITE="\033[37m" 
-BOLDBLACK="\033[1m\033[30m"       
-BOLDRED="\033[1m\033[31m"       
-BOLDGREEN="\033[1m\033[32m"      
-BOLDYELLOW="\033[1m\033[33m"     
-BOLDBLUE="\033[1m\033[34m"    
-BOLDMAGENTA="\033[1m\033[35m"   
-BOLDCYAN="\033[1m\033[36m"  
-BOLDWHITE="\033[1m\033[37m" 
+GREEN="\033[32m"
+YELLOW="\033[33m"
+BLUE="\033[34m"
+MAGENTA="\033[35m"
+CYAN="\033[36m"
+WHITE="\033[37m"
+BOLDBLACK="\033[1m\033[30m"
+BOLDRED="\033[1m\033[31m"
+BOLDGREEN="\033[1m\033[32m"
+BOLDYELLOW="\033[1m\033[33m"
+BOLDBLUE="\033[1m\033[34m"
+BOLDMAGENTA="\033[1m\033[35m"
+BOLDCYAN="\033[1m\033[36m"
+BOLDWHITE="\033[1m\033[37m"
 
 #-------------------
 # GLOBAL VARIABLES
@@ -48,10 +48,11 @@ LIST_EXCLUDE=()
 
 LIST_ALL_PROGRAMS=("git" "qt" "vscode" "screen" "tree" "cgdb" "ddd" "tesseract" "androidstudio" "wxWidgets")
 LIST_ALL_PROGRAMS+=("gnome" "cmake" "automake" "tex-all" "tess-two" "emacs" "vim" "nasm" "ggtags" "codeblocks" "codelite")
+LIST_ALL_PROGRAMS+=("ssh" "clang" )
 
 BUILD_FROM_SOURCE=false
 # PATH_DOWNLOAD=$HOME"/Download/"
-PATH_DEFAULT_DOWNLOAD=$HOME"/Documents/SourceCode/"
+PATH_DEFAULT_DOWNLOAD=$HOME"/Documents/Repos/SettiX"
 PATH_GLOBAL=
 CLEAN_BUILD=true
 
@@ -92,7 +93,7 @@ save_log_file() {
     echo "*) $(date)" >> $LOG_FILE
     for arg in "$@"
     do
-        echo "$arg" >> $LOG_FILE    
+        echo "$arg" >> $LOG_FILE
     done
 
 }
@@ -104,14 +105,14 @@ check_which_program() {
     do
         local path=$(which "$cmd")
         if [[ ! -z "$path" ]]; then
-            save_log_file "'$cmd' found at: $path" 
+            save_log_file "'$cmd' found at: $path"
             eval $__resultVar=true
             echo -e "${GREEN}$1 is installed: command $cmd found${RESET}"
             return
         fi
     done
 
-    save_log_file "commands '$@' not found in the PATH" 
+    save_log_file "commands '$@' not found in the PATH"
     eval $__resultVar=false
 }
 
@@ -119,7 +120,7 @@ use_check() {
     debug "1st Method: "
     check_which_program program "_make" "_qmake" "qmake"
      if [[ $program ]]; then
-       echo "program already installed" 
+       echo "program already installed"
     else
         echo "Program not found"
     fi
@@ -164,7 +165,7 @@ action_ggtags(){
         install_ggtags "$@"
     else
         unistall_ggatsg "$@"
-    fi 
+    fi
 
 }
 
@@ -175,7 +176,7 @@ install_ggtags_dependencies(){
     sudo apt-get -y install wget
     sudo apt-get -y install ncurses-dev
     sudo apt-get -y install exuberant-ctags
-     
+
 }
 
 install_ggtags() {
@@ -193,19 +194,19 @@ install_ggtags() {
     if [[ ! -z $installed ]]; then
         echo -e "$installed"
         echo "The program seems to be already installed"
-        echo -e "Do you want to install it anyway (yes/no) " 
+        echo -e "Do you want to install it anyway (yes/no) "
         read input
 
         if [[ "$input" == "n"* ]]; then
-            save_log_file "Aborting installation $name" 
+            save_log_file "Aborting installation $name"
             return
         fi
     fi
-    
+
     install_ggtags_dependencies
 
     echo "install GNU global..."
-	mkdir -p $path 2>>$LOG_FILE 
+	mkdir -p $path 2>>$LOG_FILE
     cd $path 2>>$LOG_FILE
     wget $URL_GGTAGS
     tar zxvf global-6.4.tar.gz
@@ -214,10 +215,10 @@ install_ggtags() {
     make
     sudo make install
 
-} 
+}
 
 unistall_ggtags(){
-    
+
     printf_action "UNISTALLING VIM"
 
 }
@@ -236,7 +237,7 @@ action_vim(){
         install_vim "$@"
     else
         unistall_vim "$@"
-    fi 
+    fi
 
 }
 
@@ -254,11 +255,11 @@ install_vim() {
     if [[ ! -z $installed ]]; then
         echo -e "$installed"
         echo "The program seems to be already installed"
-        echo -e "Do you want to install it anyway (yes/no) " 
+        echo -e "Do you want to install it anyway (yes/no) "
         read input
 
         if [[ "$input" == "n"* ]]; then
-            save_log_file "Aborting installation $name" 
+            save_log_file "Aborting installation $name"
             return
         fi
     fi
@@ -272,7 +273,7 @@ install_vim() {
     apt-get install -y vim-gtk
 
     if [[ $opt != "no-ultimate" ]]; then # from source
-        
+
 	    git clone $VIM_ULTIMATE_GIT ~/.vim_runtime && \
 	    # plus - the colors are strage
 	    # sh ~/.vim_runtime/install_awesome_vimrc.sh
@@ -280,10 +281,10 @@ install_vim() {
         sh ~/.vim_runtime/install_basic_vimrc.sh
     fi
 
-} 
+}
 
 unistall_vim(){
-    
+
     printf_action "UNISTALLING VIM"
 
 }
@@ -304,16 +305,16 @@ action_qt() {
         install_qt "$@"
     else
         unistall_qt "$@"
-    fi 
+    fi
 
 }
 
 install_dependencies_qt() {
 
     if [[ "$source" == false  ]]; then
-	    # install the full runtime files for the generic font configuration library: 
+	    # install the full runtime files for the generic font configuration library:
         use_apt "libglu1-mesa-dev -y" "mesa-common-dev" "qt4-qmake"  # to use qmake outside Qt creator
-        save_log_file "apt-get $ACTION" "libglu1-mesa-dev -y" "mesa-common-dev" "qt4-qmake" 
+        save_log_file "apt-get $ACTION" "libglu1-mesa-dev -y" "mesa-common-dev" "qt4-qmake"
     else
         echo -e "${RED}Build from source not aoutomatize${RESET}"
     fi
@@ -335,11 +336,11 @@ install_qt() {
     if [[ ! -z $installed ]]; then
         echo -e "$installed"
         echo "The program seems to be already installed"
-        echo -e "Do you want to install it anyway the (yes/no) " 
+        echo -e "Do you want to install it anyway the (yes/no) "
         read input
 
         if [[ "$input" == "n"* ]]; then
-            save_log_file "Aborting installation $name" 
+            save_log_file "Aborting installation $name"
             return
         fi
     fi
@@ -349,18 +350,18 @@ install_qt() {
     if [[ $source == true ]]; then # from source
         save_log_file "Installing $qt from source"
         echo -e "${GREEN}The building from the source is not yet automatize.${RESET}"
-        echo -e "Do you want to install it with the installer (yes/no) " 
+        echo -e "Do you want to install it with the installer (yes/no) "
         read input
 
         if [[ "$input" == "n"* ]]; then
-            save_log_file "Aborting installation $name" 
+            save_log_file "Aborting installation $name"
             return
         fi
     fi
-    
+
     save_log_file "Installing $qt via installer"
     # from installer
-	mkdir -p $path 2>>$LOG_FILE 
+	mkdir -p $path 2>>$LOG_FILE
     cd $path 2>>$LOG_FILE
     if [ ! -d $QT_URL ]; then
         save_log_file "downloading installer from $QT_URL" "into $path/$QT_LUNCHER"
@@ -374,7 +375,7 @@ unistall_qt() {
 
     // TODO: read log file and gather the informations
     printf_action "UNISTALLING QT"
-    
+
     local source="$1"
     local name="$2"
     local path="$3"
@@ -386,7 +387,7 @@ unistall_qt() {
     if [[ ! -z $installed ]]; then
         echo -e "$installed"
         echo "The program seems not to be installed"
-        echo -e "Do you want to proceed with the unistallation it anyway (yes/no) " 
+        echo -e "Do you want to proceed with the unistallation it anyway (yes/no) "
         read input
 
         if [[ "$input" == "y"* ]]; then
@@ -397,15 +398,15 @@ unistall_qt() {
 
     if [[ $source ]]; then # from source
         echo -e "${GREEN}The building from the source is not yet automatize.${RESET}"
-        echo -e "Do you want to uninstall it with the installer (yes/no) " 
+        echo -e "Do you want to uninstall it with the installer (yes/no) "
         read input
 
         if [[ "$input" == "n"* ]]; then
-            save_log_file "Aborting installation $name" 
+            save_log_file "Aborting installation $name"
             return
         fi
     fi
-    
+
     # from installer
     if [ -d $path ]; then
 	    cd $path && \
@@ -427,7 +428,7 @@ action_vscode() {
         install_vscode "$@"
     else
         unistall_vscode "$@"
-   fi 
+   fi
 }
 
 install_dependencies_vscode() {
@@ -463,11 +464,11 @@ install_vscode() {
     if [[ ! -z $installed ]]; then
         echo -e "$installed"
         echo "The program seems to be already installed"
-        echo -e "Do you want to install it anyway (yes/no) " 
+        echo -e "Do you want to install it anyway (yes/no) "
         read input
 
         if [[ "$input" == "n"* ]]; then
-            save_log_file "Aborting installation $name" 
+            save_log_file "Aborting installation $name"
             return
         fi
     fi
@@ -489,7 +490,7 @@ install_vscode() {
     fi
 
     install_vscode_exention
-    
+
 }
 
 unistall_vscode() {
@@ -505,18 +506,18 @@ unistall_vscode() {
 GIT_CLONE=git://git.kernel.org/pub/scm/git/git.git
 
 install_git_source() {
-    
+
     printf_action "INSTALLING git from source"
-    
+
     local source="$1"
     local name="$2"
     local path="$3"
     local opt="$4"
-    
-    mkdir -p $path && \
-    cd "$path" 
 
-    local installed=$(check_which_program "git")   
+    mkdir -p $path && \
+    cd "$path"
+
+    local installed=$(check_which_program "git")
     # if git is installed, I use git to download the source.
     if [[ ! -z $installed ]]; then
         git clone $GIT_CLONE
@@ -546,7 +547,7 @@ action_git_source() {
         install_git_source "$@"
     else
         unistall_git_source "$@"
-    fi 
+    fi
 
 
 }
@@ -571,27 +572,27 @@ install_dependencies_cgdb() {
 install_cgdb() {
 
     printf_action "INSTALLING cgdb from source"
-    
+
     local source="$1"
     local name="$2"
     local path="$3"
     local opt="$4"
-    
+
     local installed=$(check_which_program "cgdb")
     if [[ ! -z $installed ]]; then
         echo -e "$installed"
         echo "The program seems to be already installed"
-        echo -e "Do you want to install it anyway (yes/no) " 
+        echo -e "Do you want to install it anyway (yes/no) "
         read input
 
         if [[ "$input" == "n"* ]]; then
-            save_log_file "Aborting installation $name" 
+            save_log_file "Aborting installation $name"
             return
         fi
     fi
 
     mkdir -p $path
-    cd "$path" 
+    cd "$path"
 
     install_dependencies_cgdb "$source"
 
@@ -600,7 +601,7 @@ install_cgdb() {
     elif [[ "$opt" != *"--prefix"* ]]; then
         opt=$opt" --prefix=/usr/local"
     fi
-    if [[ "$name_program" == "ccdgb" ]]; then 
+    if [[ "$name_program" == "ccdgb" ]]; then
         if [[ ! -d "ccgdb" ]]; then
             git clone https://github.com/dcohenp/cgdb.git "$name_program"  #old version (.c - but C-T for input windows worḱs on Ubuntu)
         fi
@@ -612,7 +613,7 @@ install_cgdb() {
         if [[ ! -d "cgdb" ]]; then
             git clone git://github.com/cgdb/cgdb.git "$name_program"
         fi
-        
+
         cd "$name_program"
     fi
     # common
@@ -622,7 +623,7 @@ install_cgdb() {
     ./configure $opt_tmp  && \
     make && \
     sudo make install
-    
+
     if [[ "$CLEAN_BUILD" == true ]]; then
         make clean
     fi
@@ -637,12 +638,12 @@ unistall_cgdb() {
 }
 
 action_cgdb() {
-    
+
     if [[ "$ACTION" == "install" ]]; then
         install_cgdb "$@"
     else
         unistall_cgdb "$@"
-   fi 
+   fi
 
 }
 
@@ -672,28 +673,28 @@ install_dependencies_emacs() {
 install_emacs() {
 
     printf_action "INSTALLING emacs 25.1 from source"
-    
+
     local source="$1"
     local name="$2"
     local path="$3"
     local opt="$4"
-    
+
     local installed=$(check_which_program "emacs")
     if [[ ! -z $installed ]]; then
         echo -e "$installed"
         echo "The program seems to be already installed"
-        echo -e "Do you want to install it anyway (yes/no) " 
+        echo -e "Do you want to install it anyway (yes/no) "
         read input
 
         if [[ "$input" == "n"* ]]; then
-            save_log_file "Aborting installation $name" 
+            save_log_file "Aborting installation $name"
             return
         fi
     fi
 
     mkdir -p "$path"
     echo entering "$path"
-    cd "$path" 
+    cd "$path"
 
     install_dependencies_emacs "$source"
     # problem with the git repository ....
@@ -702,28 +703,35 @@ install_emacs() {
         wget $TRALBAR_EMACS
         tar -xvzf emacs-25.1.tar.gz
     fi
-    
+
     cd emacs-25.1
 
     #NOTE: the xwidget option did not work for me.
     # I followed also what suggested in
     # http://ubuntuhandbook.org/index.php/2016/09/install-gnu-emacs-25-1-in-ubuntu-16-04/
     # ./configure --with-cairo --with-xwidgets --with-x-toolkit=gtk3
-    
+
 
     #./autogen.sh && \
     #./autogen.sh git && \
     # necessary, otherwise configure read the name of --with from the the first - to the end of opt.
     opt_tmp=($opt)
-    #./configure $opt_tmp # --with-cairo --with-xwidgets --with-x-toolkit=gtk3 
-    ./configure --with-cairo --with-xwidgets --with-x-toolkit=gtk3 
+    #./configure $opt_tmp # --with-cairo --with-xwidgets --with-x-toolkit=gtk3
+    ./configure --with-cairo --with-xwidgets --with-x-toolkit=gtk3
     #"$opt"  && \
     make && \
     sudo make install
-    
+
     if [[ "$CLEAN_BUILD" == true ]]; then
         make clean
     fi
+
+    # TODO: copy init
+    #if [[ -d $HOME"/.emacs.d" ]]; then
+        #mkdir -p $HOME/.emacs.d
+    #fi
+
+
 
 }
 
@@ -761,40 +769,40 @@ unistall_tesseract() {
     local name="$2"
     local path="$3"
     local opt="$4"
-    
+
     local installed=$(check_which_program "tesseract")
     if [[ ! -z $installed ]]; then
         echo -e "$installed"
         echo "The program seems to be already installed"
-        echo -e "Do you want to install it anyway (yes/no) " 
+        echo -e "Do you want to install it anyway (yes/no) "
         read input
 
         if [[ "$input" == "n"* ]]; then
-            save_log_file "Aborting installation $name" 
+            save_log_file "Aborting installation $name"
             return
         fi
     fi
 
-    install_dependencies_tesseract "$source"        
+    install_dependencies_tesseract "$source"
     if [ -d "$DIR_TESS_DATA" ]; then
         rm -rf $DIR_TESS_DATA
     fi
 
-    rm $(which tesseract) 
+    rm $(which tesseract)
 
     # remove git repo
     if [ -d "path"/tesseract ]; then
-        rm -rf  "path"/tesseract 
+        rm -rf  "path"/tesseract
     fi
 
-}    
- 
+}
+
 install_dependencies_tesseract() {
 
     # use_apt "git" "automake" "build-essential" "libtool" "tesseract-ocr-eng"
     # dependencies not to purge
-    if [ "$ACTION" == install ]; then 
-        use_apt "git" "autoconf" "automake" "libtool" 
+    if [ "$ACTION" == install ]; then
+        use_apt "git" "autoconf" "automake" "libtool"
     fi
     # depenendcies
     use_apt "pkg-config" "libpng12-dev" "libjpeg8-de" "libtiff5-dev" "zlib1g-dev"
@@ -808,27 +816,27 @@ install_dependencies_tesseract() {
 install_tesseract() {
 
     printf_action "INSTALLING Tesseract from source"
-    
+
     local source="$1"
     local name="$2"
     local path="$3"
     local opt="$4"
-    
+
     local installed=$(check_which_program "tesseract")
     if [[ ! -z $installed ]]; then
         echo -e "$installed"
         echo "The program seems to be already installed"
-        echo -e "Do you want to install it anyway (yes/no) " 
+        echo -e "Do you want to install it anyway (yes/no) "
         read input
 
         if [[ "$input" == "n"* ]]; then
-            save_log_file "Aborting installation $name" 
+            save_log_file "Aborting installation $name"
             return
         fi
     fi
 
     mkdir -p $path
-    cd "$path" 
+    cd "$path"
 
     install_dependencies_tesseract "$source"
     if [ ! -d "tesseract" ]; then
@@ -840,7 +848,7 @@ install_tesseract() {
     make && \
     sudo make install && \
     make training && \
-    
+
     if [[ "$CLEAN_BUILD" == true ]]; then
         make clean
     fi
@@ -865,7 +873,7 @@ action_tesseract() {
         install_tesseract "$@"
     else
         unistall_tesseract "$@"
-   fi 
+   fi
 
 }
 
@@ -881,11 +889,11 @@ unistall_tesseract_studio() {
 
     printf_action "UNINSTALLING Tesseract for Android Studio from source"
 
-}    
- 
+}
+
 install_dependencies_tesseract_studio() {
 
-    if [[ "$(which ndk-build)" == "" ]];then 
+    if [[ "$(which ndk-build)" == "" ]];then
         echo "Install the ndk-bundlei, or add its directory to the PATH variable"
     fi
 
@@ -897,7 +905,7 @@ install_dependencies_tesseract_studio() {
 install_tesseract_studio() {
 
     printf_action "INSTALLING Tesseract from source"
-    
+
     local source="$1"
     local name="$2"
     local path="$3"
@@ -911,12 +919,12 @@ install_tesseract_studio() {
             # echo "TODO"
         # fi
         # echo "Install the ndk-bundle, or add its directory to the PATH variable"
-        # save_log_file "Aborting installation $name" 
+        # save_log_file "Aborting installation $name"
         # return
     # fi
 
     mkdir -p $path
-    cd "$path" 
+    cd "$path"
 
     install_dependencies_tesseract "$source"
     if [ ! -d "tess-two" ]; then
@@ -926,7 +934,7 @@ install_tesseract_studio() {
     ndk-build && \
     android update project --path . && \
     ant release
-    
+
 }
 
 action_tesseract_studio() {
@@ -935,7 +943,7 @@ action_tesseract_studio() {
         install_tesseract_studio"$@"
     else
         unistall_tesseract_studio "$@"
-   fi 
+   fi
 
 }
 
@@ -947,7 +955,7 @@ action_tesseract_studio() {
 # -----------------------------------------------------------------------------------------------#
 
 SCRIPT_ANDROID_SCRIPT_ZIP="android-studio-ide-145.3537739-linux.zip"   # android-studio-ide-141.2178183-linux.zip
-URL_ANDROID_STUDIO="https://dl.google.com/dl/android/studio/ide-zips/2.2.3.0/"$SCRIPT_ANDROID_SCRIPT_ZIP 
+URL_ANDROID_STUDIO="https://dl.google.com/dl/android/studio/ide-zips/2.2.3.0/"$SCRIPT_ANDROID_SCRIPT_ZIP
 DESKTOP_ANDROID=$HOME"/.local/share/applications/androidstudio.desktop"
 
 unistall_androidstudio() {
@@ -958,21 +966,21 @@ unistall_androidstudio() {
     local name="$2"
     local path="$3"
     local opt="$4"
-    
+
     local installed=$(check_which_program "studio")
     if [[ ! -z $installed ]]; then
         echo -e "$installed"
         echo "The program seems not to be installed"
-        echo -e "Do you want to continue anyway (yes/no) " 
+        echo -e "Do you want to continue anyway (yes/no) "
         read input
 
         if [[ "$input" == "n"* ]]; then
-            save_log_file "Aborting installation $name" 
+            save_log_file "Aborting installation $name"
             return
         fi
     fi
 
-}    
+}
 
 install_dependencies_adroidstudio() {
     echo TODO
@@ -981,27 +989,27 @@ install_dependencies_adroidstudio() {
 install_androidstudio() {
 
     printf_action "INSTALLING Android Studio"
-    
+
     local source="$1"
     local name="$2"
     local path="$3"
     local opt="$4"
-    
+
     local installed=$(check_which_program "studio")
     if [[ ! -z $installed ]]; then
         echo -e "$installed"
         echo "The program seems to be already installed"
-        echo -e "Do you want to install it anyway (yes/no) " 
+        echo -e "Do you want to install it anyway (yes/no) "
         read input
 
         if [[ "$input" == "n"* ]]; then
-            save_log_file "Aborting installation $name" 
+            save_log_file "Aborting installation $name"
             return
         fi
     fi
 
     mkdir -p $path
-    cd "$path" 
+    cd "$path"
 
     install_dependencies_adroidstudio "$source"
 
@@ -1041,8 +1049,8 @@ install_androidstudio() {
     Terminal=false
     StartupNotify=true
     StartupWMClass=android-studio" >> $DESKTOP_ANDROID
-    
-    
+
+
 }
 
 action_androidstudio() {
@@ -1051,7 +1059,7 @@ action_androidstudio() {
         install_androidstudio "$@"
     else
         unistall_androidstudio "$@"
-   fi 
+   fi
 
 }
 
@@ -1072,31 +1080,31 @@ unistall_wxWidgets() {
     local name="$2"
     local path="$3"
     local opt="$4"
-    
+
     local installed=$(`wx-config`)
     if [[ ! -z $installed ]]; then
         # echo -e "$installed"
         echo "The program seems to be already installed"
-        echo -e "Do you want to install it anyway (yes/no) " 
+        echo -e "Do you want to install it anyway (yes/no) "
         read input
 
         if [[ "$input" == "n"* ]]; then
-            save_log_file "Aborting installation $name" 
+            save_log_file "Aborting installation $name"
             return
         fi
     fi
 
 
-}    
- 
+}
+
 install_dependencies_wxWidgets() {
-    
+
     # use_apt "git" "automake" "build-essential" "libtool" "tesseract-ocr-eng"
 
     use_apt "libgstreamer1.0-dev" "libgstreamer-plugins-base1.0-dev"
     use_apt "libwxgtk-media3.0-dev"
     use_apt "build-essential" "libgtk-3-dev"
-    # use_apt install libcurl4 ... 
+    # use_apt install libcurl4 ...
     use_apt "libcurl4-gnutls-dev"
 
 }
@@ -1104,7 +1112,7 @@ install_dependencies_wxWidgets() {
 install_wxWidgets() {
 
     printf_action "INSTALLING wxWidgets from source"
-    
+
     local source="$1"
     local name="$2"
     local path="$3"
@@ -1115,27 +1123,27 @@ install_wxWidgets() {
     if [[ ! -z $installed ]]; then
         echo -e "$installed"
         echo "The program seems to be already installed"
-        echo -e "Do you want to install it anyway (yes/no) " 
+        echo -e "Do you want to install it anyway (yes/no) "
         read input
 
         if [[ "$input" == "n"* ]]; then
-            save_log_file "Aborting installation $name" 
+            save_log_file "Aborting installation $name"
             return
         fi
     fi
 
     mkdir -p $path
-    cd "$path" 
+    cd "$path"
 
     install_dependencies_wxWidgets "$source"
     if [ ! -d "wxWidgets" ]; then
         git clone $WXWIDGETS_GIT
     fi
-    
+
     if [[ -z "$opt" ]]; then
         opt=" --enable-unicode --enable-debug --with-opengl"
     fi
-    
+
     cd wxWidgets 2>>$LOG_FILE
     mkdir gtk-build 2>>$LOG_FILE
     cd gtk-build 2>>$LOG_FILE
@@ -1144,7 +1152,7 @@ install_wxWidgets() {
     make 2>>$LOG_FILE
     make install 2>>$LOG_FILE
     sudo ldconfig
-    
+
     if [[ "$CLEAN_BUILD" == true ]]; then
         make clean
     fi
@@ -1157,7 +1165,7 @@ action_wxWidgets() {
         install_wxWidgets "$@"
     else
         unistall_wxWidgets "$@"
-   fi 
+   fi
 
 }
 
@@ -1185,7 +1193,7 @@ parse_arguments() {
             purge|unistall)
                 ACTION="purge"
                 ;;
-                # <<<<<<<<<<<<<<<<<<<<<<     
+                # <<<<<<<<<<<<<<<<<<<<<<
 
             # -----2.nd option ---------
             --all|-a)
@@ -1203,7 +1211,7 @@ parse_arguments() {
             --noclean|nclean)
                 CLEAN_BUILD=false
                 ;;
-                # <<<<<<<<<<<<<<<<<<<<<<     
+                # <<<<<<<<<<<<<<<<<<<<<<
 
             # ----- 3.rd + options ------
             --source|-s)
@@ -1219,7 +1227,7 @@ parse_arguments() {
             --opt|-options|-o)
                 shift; local opt="$1"
                 LIST_PROGRAMS+=("$OPT_TAG" "$opt")
-                ;;       
+                ;;
             # ---- extra: help ---------
             --help|-h)
                 usage
@@ -1230,7 +1238,7 @@ parse_arguments() {
 			    echo "settiX version $VERSION"
 			    exit 0
 			    ;;
-             # programs -> install or exclude   
+             # programs -> install or exclude
             *)
                 echo "         default: $arg == * "
                 if [[ "$EXCLUDE" == "true" ]]; then
@@ -1239,14 +1247,14 @@ parse_arguments() {
                     LIST_PROGRAMS+=("$arg")
                 fi
                 ;;
-        esac 
+        esac
         shift;
     done
 
 }
 
 parse_actions() {
-    
+
     sudo apt-get update  # updating
 
     for (( i=0; i<${#LIST_PROGRAMS[@]}; i++ ))
@@ -1258,12 +1266,12 @@ parse_actions() {
         local path_download="$PATH_DEFAULT_DOWNLOAD"
         local opt_install=""
 
-        if [[ ${LIST_PROGRAMS[$i]} == "$SOURCE_TAG" ]]; then   # build from source? 
+        if [[ ${LIST_PROGRAMS[$i]} == "$SOURCE_TAG" ]]; then   # build from source?
             source=true
             i=$((i+1))
         fi
-        
-        name_program=${LIST_PROGRAMS[$i]}                     # name program  
+
+        name_program=${LIST_PROGRAMS[$i]}                     # name program
 
         if [[ ${LIST_PROGRAMS[$((i+1))]} == "$PATH_TAG" ]]; then
             i=$((i+2))
@@ -1283,7 +1291,7 @@ parse_actions() {
             qt|QT|Qt)
                 action_qt "$source" "$name_program" "$path_download" "$opt_install"
                 ;;
-            vscode|VSCODE)    
+            vscode|VSCODE)
                 action_vscode "$source" "$name_program" "$path_download" "$opt_install"
                 ;;
             cgdb|ccgdb)
@@ -1310,7 +1318,7 @@ parse_actions() {
            vim)
               action_vim "$source" "$name_program" "$path_download" "$opt_install"
                 ;;
-	    git|tree|screen|ddd|tex-all|texstudio|textlive*|cmake|Cmake|CMake|gnome|gnome_pkg|nasm|codeblocks|codelite)
+	    git|tree|screen|ddd|tex-all|texstudio|textlive*|cmake|Cmake|CMake|gnome|gnome_pkg|nasm|codeblocks|codelite|ssh|clang)
 
                 if [[ ! "$source" ]]; then
                     case "$name_program" in
@@ -1320,7 +1328,7 @@ parse_actions() {
                         *)
                             echo -e "${BLUE}WARNING: ${RESET}" "Unknow program"
                             ;;
-                    esac    
+                    esac
                 else
                     case "$name_program" in
                         codelite)
@@ -1354,8 +1362,16 @@ parse_actions() {
                         codeblocks)
                             name_program="codeblocks"
                             ;;
+                        ssh)
+                            name_program=("openssh-client" "openssh-server")
+                            ;;
+                        clang)
+                            name_program=("clang-format-3.8" "liblldb-3.5-dev")
+                            #name_program="clang-format-3.8"
+                            #name_program+=" liblldb-3.8-dev"
+                            ;;
                         *)
-                            echo -e "${BLUE}WARNING: ${RESET}" "Unknow program" 
+                            echo -e "${BLUE}WARNING: ${RESET}" "Unknow program"
                             echo -e "try with ${GREEN}apt-get${RESET} $ACTION $name_program"
                             save_log_file "WARNING: Unknown Program try apt-get $ACTION $name_program"
                             use_apt "$name_program" 2>&1 | tee -a $LOG_FILE
@@ -1363,7 +1379,7 @@ parse_actions() {
 
                     esac
 
-                    use_apt "$name_program"
+                    use_apt "${name_program[@]}"
                 fi
                 ;;
             *__excluded_program__)
@@ -1371,12 +1387,12 @@ parse_actions() {
                 save_log_file "excluded program"
                 ;;
             *)
-                echo -e "${BLUE}WARNING: ${RESET}" "Unknow program" 
+                echo -e "${BLUE}WARNING: ${RESET}" "Unknow program"
                 echo -e "try with ${GREEN}apt-get${RESET} $ACTION $name_program"
                 save_log_file "WARNING: Unknown Program try apt-get $ACTION $name_program"
-                use_apt "$name_program" >> $LOG_FILE
+                use_apt "$name_program" 2>&1 | tee -a $LOG_FILE
                 ;;
-            
+
         esac
 
     done
@@ -1385,7 +1401,6 @@ parse_actions() {
 
 exclude_programs() {
 
-
     LIST_PROGRAMS=("${LIST_ALL_PROGRAMS[@]}")
 
     for ((i=0; i<${#LIST_EXCLUDE[@]};i++))
@@ -1393,7 +1408,7 @@ exclude_programs() {
         for ((j=0; j<${#LIST_PROGRAMS[@]};j++))
         do
             if [[ "$LIST_EXCLUDE[$i]" == "$LIST_PROGRAMS[$j]" ]]; then
-                debug "LIST EXCLUDE $i is equal to LIST PROGRAMS $j" "$LIST_EXCLUDE[$i] == $LIST_PROGRAMS[$j]" 
+                debug "LIST EXCLUDE $i is equal to LIST PROGRAMS $j" "$LIST_EXCLUDE[$i] == $LIST_PROGRAMS[$j]"
                 LIST_PROGRAMS[$j]+="__excluded_program__"
             fi
         done
@@ -1409,9 +1424,9 @@ usage() {
     echo -e "${GREEN}USAGE:${RESET} ./settix.sh [ ${YELLOW}[ install ]${RESET} | purge ]"
     echo -e "                   [ --all | --exclude | ${RED}[ --p ]${RESET} ] [ [--clean] | --nclean ]"
     echo -e "                   [ ${CYAN}[ --source ]${RESET} name_program ${MAGENTA}[--d_path installation_path]${RESET} ${BLUE}[--opt installation_options]${RESET} ]"
-    echo -e "${RED}List of programs:${RESET}" 
+    echo -e "${RED}List of programs:${RESET}"
     echo -e "          -> ${LIST_ALL_PROGRAMS[@]}"
-    echo -e "${YELLOW}path default download:${RESET}" 
+    echo -e "${YELLOW}path default download:${RESET}"
     echo -e "          -> ${HOME}/Documents/SourceCode/${RESET}"
 }
 
@@ -1433,21 +1448,21 @@ usage_long() {
 
     ${YELLOW}LIST OF PROGRAMS${RESET} ${RED}- in the brackets the command to pass to the program${RESET}
 
-	    . ${BOLDGREEN}qt (qt|QT|Qt)${RESET} : Installation of the Library Qt (open source version). It is downloaded the installer. 
+	    . ${BOLDGREEN}qt (qt|QT|Qt)${RESET} : Installation of the Library Qt (open source version). It is downloaded the installer.
                 It is possible to install:
                     . The library
                     . Qt creator
                     . from source not yet automatize
 
                 . ${RED}INSTALLATION NOTE:${RESET}
-                    * In order to use qmake also outside Qt Creator it is needed the package 
-                      qt4-qmake (which is installed in the dependencies) 
+                    * In order to use qmake also outside Qt Creator it is needed the package
+                      qt4-qmake (which is installed in the dependencies)
                     * --d_path to specify where do you want the installed to be downloaded.
-                    * --source: the installation from the source is not yet ready    
+                    * --source: the installation from the source is not yet ready
 
  	    . ${BOLDGREEN}Android Studio (androidstudio|ANDROIDSTUDIO)${RESET} : Installation of the IDE android studio.
                 . ${RED}INSTALLATION NOTE:${RESET}
-                    * --d_path indicate the location where the Android Studio Zip is download  
+                    * --d_path indicate the location where the Android Studio Zip is download
                     * --opt indicate where the program is installed. The default location is '/opt'
 
  	    . ${BOLDGREEN}wxWidgets$ (wxwidgets|wxWidgets|WXWIDGETS){RESET} : Installation of the C++ library wxWidgets
@@ -1457,15 +1472,15 @@ usage_long() {
                              ${MAGENTA}--enable-unicode --enable-debug --with-opengl${RESET}
 
  	    . ${BOLDGREEN}visual studio code (vscode|VSCODE)${RESET} Installation if the IDE Visual Studio Code.
-                It is possible to install 
+                It is possible to install
                     . vscode from source
                     . vscode using the pakage menager ${YELLOW}umake${RESET}
-                . ${RED}INSTALLATION NOTE:${RESET} 
-                    * --opt indicate the option for the installation: default is --arch=64 
+                . ${RED}INSTALLATION NOTE:${RESET}
+                    * --opt indicate the option for the installation: default is --arch=64
                         (TODO: use this to pass the extantion to install ... )
 
-	    . ${BOLDGREEN}git (git|GIT)${RESET} : Installation of the gnu Version Control git. 
-                It is possible to install: 
+	    . ${BOLDGREEN}git (git|GIT)${RESET} : Installation of the gnu Version Control git.
+                It is possible to install:
                     . git via the pakage manager ${YELLOW}apt${RESET}
                     . git from source (this is useful if one needs the debugging symbols)
 
@@ -1473,7 +1488,7 @@ usage_long() {
 	    . ${BOLDGREEN}screen${RESET}
 	    . ${BOLDGREEN}ddd${RESET}
 	    . ${BOLDGREEN}cgdb${RESET} : Installation of the lightweight console frontend to the GNU debugger ${GREEN}cgdb{RESET}
-                you can choose to install 
+                you can choose to install
                     * the C-version with the vertical patch (default for --all option) - program name ccgdb
                     * the cpp-version (with the vertical patch)  - program name cgdb
                         - note that on Ubuntu 16.04 it seems that the combination <C-T> does not open the tty-window.
@@ -1481,15 +1496,15 @@ usage_long() {
                     * you can specify the installation path with the option 'opt path/of/installation'. Default is /usr/local
 
 	    . ${BOLDGREEN}emacs (EMACS|emacs)${RESET} : Installation of the text editor ${GREEN}emacs{RESET}
-                you can choose to install 
-                    * It is download the mirror repository at GitHub 
+                you can choose to install
+                    * It is download the mirror repository at GitHub
 
                 . ${RED}INSTALLATION NOTE:${RESET}
                     * To install with xwidgets:
 		                - you can pass as option --with-xwidgets --with-x-toolkit=gtk3
 		                - In order to install the dependencies via apt, in Ubuntu in 'Software and Update' it has to be allowed to download from the internet source-code.
 
-        
+
 	    . ${BOLDGREEN}tess-two${RESET}
 	    . ${BOLDGREEN}tesseract${RESET}
 	    . ${BOLDGREEN}gnome${RESET}
@@ -1512,13 +1527,13 @@ usage_long() {
 }
 
 #---------------
-# Main Function 
+# Main Function
 #---------------
 main(){
     parse_arguments "$@"
 
     save_log_file "********************************" "lunch settiX"
-    
+
     if [[ "$ALL" == true ]]; then
         debug "Create list of all programs"
         LIST_PROGRAMS=("${LIST_ALL_PROGRAMS[@]}")
@@ -1532,7 +1547,7 @@ main(){
     save_log_file "List of Programs and Options" "${LIST_PROGRAMS[@]}"
     parse_actions
 
-    # use_check 
+    # use_check
 }
 
 if [ $# = 0 ]; then
@@ -1543,6 +1558,6 @@ fi
 main "$@"
 
 # videm
-# run sudo apt-get install python python-lxml build-essential gdb cscope global 
+# run sudo apt-get install python python-lxml build-essential gdb cscope global
 #
 
