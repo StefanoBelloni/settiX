@@ -256,6 +256,9 @@ vi style of % jumping to matching brace."
 
 ;; (provide 'init)\n;;; init.el ends here
 
+;; magit package 
+(use-package magit)
+(require 'magit)
 
 ;;** EMMS
  ;; Autoload the id3-browser and bind it to F7.

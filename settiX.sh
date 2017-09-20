@@ -279,6 +279,8 @@ install_vim() {
 	    # sh ~/.vim_runtime/install_awesome_vimrc.sh
         # basic version
         sh ~/.vim_runtime/install_basic_vimrc.sh
+        echo " " >> ~/.vimrc
+        echo "set nu" >> ~/.vimrc
     fi
 
 }
