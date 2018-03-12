@@ -52,7 +52,7 @@ LIST_ALL_PROGRAMS+=("ssh" "clang" )
 
 BUILD_FROM_SOURCE=false
 # PATH_DOWNLOAD=$HOME"/Download/"
-PATH_DEFAULT_DOWNLOAD=$HOME"/Documents/Repos/SettiX"
+PATH_DEFAULT_DOWNLOAD=$HOME"/Downloads/Settix/Artefacts/"
 PATH_GLOBAL=
 CLEAN_BUILD=true
 
@@ -656,7 +656,7 @@ action_cgdb() {
 # -----------------------------------------------------------------------------------------------#
 
 GIT_EMACS="https://github.com/emacs-mirror/emacs.git"
-TRALBAR_EMACS="https://ftp.gnu.org/gnu/emacs/emacs-25.1.tar.gz"
+TRALBAR_EMACS="https://ftp.gnu.org/gnu/emacs/emacs-25.3.tar.gz"
 
 install_dependencies_emacs() {
 
@@ -674,7 +674,7 @@ install_dependencies_emacs() {
 
 install_emacs() {
 
-    printf_action "INSTALLING emacs 25.1 from source"
+    printf_action "INSTALLING emacs 25.3 from source"
 
     local source="$1"
     local name="$2"
@@ -700,13 +700,13 @@ install_emacs() {
 
     install_dependencies_emacs "$source"
     # problem with the git repository ....
-    if [[ ! -d "emacs-25.1" ]]; then
+    if [[ ! -d "emacs-25.3" ]]; then
 	    #git clone "$GIT_EMACS"
         wget $TRALBAR_EMACS
-        tar -xvzf emacs-25.1.tar.gz
+        tar -xvzf emacs-25.3.tar.gz
     fi
 
-    cd emacs-25.1
+    cd emacs-25.3
 
     #NOTE: the xwidget option did not work for me.
     # I followed also what suggested in
